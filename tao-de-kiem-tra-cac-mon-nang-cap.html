@@ -1,0 +1,2564 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thiết kế đề kiểm tra theo CV 7991</title>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-functions-compat.js"></script>
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#11151d; --panel2:#161b26; --line:#232938;
+    --text:#e7eaf0; --muted:#8b93a7; --accent:#3aa6ff; --accent2:#ffb454;
+    --good:#3ddc97; --bad:#ff6b6b;
+    --serif:"Source Serif 4","Georgia",serif; --sans:"Inter",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;}
+  header{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  header h1{font-family:var(--serif);font-size:1.25rem;margin:0;font-weight:600;letter-spacing:.2px;}
+  header .sub{color:var(--muted);font-size:.78rem;margin-top:2px;}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;}
+  button{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:7px 12px;font-size:.82rem;cursor:pointer;font-family:var(--sans);}
+  button:hover{border-color:var(--accent);}
+  button.primary{background:var(--accent);color:#06131f;border-color:var(--accent);font-weight:600;}
+  button.danger{color:var(--bad);}
+  button.small{padding:4px 8px;font-size:.74rem;}
+  nav{display:flex;gap:2px;padding:0 22px;border-bottom:1px solid var(--line);overflow-x:auto;}
+  nav button{background:none;border:none;border-bottom:2px solid transparent;border-radius:0;padding:11px 14px;color:var(--muted);white-space:nowrap;}
+  nav button.active{color:var(--text);border-bottom-color:var(--accent);font-weight:600;}
+  main{padding:20px 22px 80px;max-width:1180px;margin:0 auto;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:16px;}
+  .card h2{font-family:var(--serif);font-size:1rem;margin:0 0 12px;color:var(--accent2);}
+  label{display:block;font-size:.74rem;color:var(--muted);margin-bottom:4px;}
+  input[type=text],input[type=number],textarea,select{
+    width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:6px;color:var(--text);
+    padding:7px 9px;font-size:.85rem;font-family:var(--sans);
+  }
+  textarea{resize:vertical;min-height:46px;}
+  .grid{display:grid;gap:10px;}
+  .grid.cols2{grid-template-columns:1fr 1fr;}
+  .grid.cols3{grid-template-columns:1fr 1fr 1fr;}
+  .grid.cols4{grid-template-columns:1fr 1fr 1fr 1fr;}
+  table{width:100%;border-collapse:collapse;font-size:.8rem;}
+  th,td{border:1px solid var(--line);padding:6px 8px;text-align:center;vertical-align:middle;}
+  th{background:var(--panel2);color:var(--muted);font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.3px;}
+  td.left{text-align:left;}
+  .topic-block{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px;background:var(--panel2);}
+  .topic-head{display:flex;gap:8px;align-items:center;margin-bottom:10px;}
+  .topic-head input{flex:1;font-weight:600;}
+  .level-row{display:grid;grid-template-columns:70px 1fr;gap:8px;margin-bottom:8px;align-items:start;}
+  .level-tag{padding:6px 0;font-size:.74rem;font-weight:700;border-radius:6px;text-align:center;align-self:start;}
+  .tag-NB{background:#1c3a2c;color:var(--good);}
+  .tag-TH{background:#2c3a1c;color:var(--accent2);}
+  .tag-VD{background:#2c1c3a;color:#c98bff;}
+  .alloc-row{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;}
+  .alloc-cell{display:flex;flex-direction:column;gap:2px;width:96px;}
+  .alloc-cell span{font-size:.65rem;color:var(--muted);}
+  .alloc-cell input{padding:5px;text-align:center;}
+  .alloc-cell input:disabled{opacity:.25;cursor:not-allowed;}
+  .pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.7rem;font-weight:700;}
+  .pill.ok{background:#13301f;color:var(--good);}
+  .pill.bad{background:#3a1414;color:var(--bad);}
+  .muted{color:var(--muted);}
+  .right{text-align:right;}
+  .flex{display:flex;gap:8px;align-items:center;}
+  .between{justify-content:space-between;}
+  .qslot{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px;background:var(--panel2);}
+  .qslot .meta{font-size:.7rem;color:var(--muted);margin-bottom:6px;}
+  .ans-line{display:grid;grid-template-columns:120px 1fr;gap:8px;align-items:center;margin-top:4px;}
+  .toast{position:fixed;bottom:18px;right:18px;background:var(--panel2);border:1px solid var(--accent);color:var(--text);padding:10px 16px;border-radius:8px;font-size:.82rem;z-index:50;box-shadow:0 4px 18px rgba(0,0,0,.4);}
+  @media print{
+    body{background:#fff;color:#000;}
+    header,nav,.toolbar,.no-print,button{display:none !important;}
+    .card{border-color:#999;background:#fff;}
+    th{background:#eee;color:#000;}
+    .pill{display:none;}
+  }
+  @media (max-width:720px){
+    .grid.cols2,.grid.cols3,.grid.cols4{grid-template-columns:1fr;}
+    .level-row{grid-template-columns:1fr;}
+  }
+  #authScreen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:200;}
+  #authBox{width:100%;max-width:340px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 24px;text-align:center;}
+  #authBox h2{font-family:var(--serif);font-size:1.1rem;margin:0 0 4px;color:var(--text);}
+  #authBox p.sub{color:var(--muted);font-size:.78rem;margin:0 0 18px;}
+  #authBox input{margin-bottom:10px;}
+  #authBox button.primary{width:100%;padding:9px;margin-top:4px;}
+  #authMsg{font-size:.78rem;margin-top:12px;min-height:16px;}
+  #authMsg.err{color:var(--bad);}
+  #authMsg.ok{color:var(--good);}
+  #authMsg.warn{color:var(--accent2);}
+  #logoutBtn{margin-left:4px;}
+</style>
+</head>
+<body>
+
+<div id="authScreen">
+  <div id="authBox">
+    <h2>Thiết kế đề kiểm tra</h2>
+    <p class="sub">Đăng nhập để sử dụng</p>
+    <input type="text" id="authEmail" placeholder="Email đăng nhập" autocomplete="username">
+    <input type="password" id="authPass" placeholder="Mật khẩu" autocomplete="current-password">
+    <button class="primary" id="authBtn" onclick="doLogin()">Đăng nhập</button>
+    <div id="authMsg"></div>
+  </div>
+</div>
+
+<div id="appContainer" style="display:none">
+<header>
+  <div>
+    <h1 id="examTitleHead">Thiết kế đề kiểm tra</h1>
+    <div class="sub">Ma trận – Bản đặc tả – Đề – Đáp án theo Công văn 7991/BGDĐT-GDTrH · áp dụng mọi môn</div>
+  </div>
+  <div class="toolbar no-print">
+    <button onclick="newExam()">+ Đề mới</button>
+    <button onclick="openLoadDialog()">Mở đề đã lưu</button>
+    <button class="primary" onclick="saveExam()">Lưu đề</button>
+    <button onclick="exportBackupJson()">⬇️ Xuất file sao lưu</button>
+    <button onclick="document.getElementById('import-json-input').click()">⬆️ Nhập file sao lưu</button>
+    <input type="file" id="import-json-input" accept=".json" style="display:none" onchange="importBackupJson(event)">
+    <button class="primary" onclick="exportAllWord()">📄 Xuất Word (Toàn bộ)</button>
+    <button onclick="window.print()">In / Xuất PDF</button>
+    <span id="quotaBadge" style="display:none;align-self:center;padding:4px 10px;border:1px solid #888;border-radius:14px;font-size:.8rem;white-space:nowrap"></span>
+    <button id="logoutBtn" onclick="doLogout()">Đăng xuất</button>
+  </div>
+</header>
+
+<nav id="tabBar"></nav>
+<main id="mainArea"></main>
+</div>
+
+<script>
+/* ---------------- FIREBASE AUTH + LICENSE CHECK ---------------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyBmn54Z8ZZ2lGDQexVWyJiLD4K2h7jf6Iw",
+  authDomain: "de-kiem-tra-9aba7.firebaseapp.com",
+  databaseURL: "https://de-kiem-tra-9aba7-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "de-kiem-tra-9aba7",
+  storageBucket: "de-kiem-tra-9aba7.firebasestorage.app",
+  messagingSenderId: "1816067741",
+  appId: "1:1816067741:web:945d940ac4fe89d1cc9e74"
+};
+firebase.initializeApp(firebaseConfig);
+const fbAuth = firebase.auth();
+const fbDb = firebase.firestore();
+const fbFn = firebase.app().functions('asia-southeast1');
+let licenseGoi = 'coban', luotConLai = 0, luotTong = 0, luotHomNay = 0, tranNgay = 40, warned80 = false;
+function vnToday(){ return new Date(Date.now() + serverOffset + 7*3600*1000).toISOString().slice(0,10); }
+function applyQuota(d){
+  licenseGoi = d.goi || 'coban';
+  luotConLai = Number(d.luotConLai) || 0;
+  luotTong = Number(d.luotTong) || 0;
+  tranNgay = Number(d.tranNgay) || 40;
+  luotHomNay = (d.ngayDem === vnToday()) ? (Number(d.luotHomNay) || 0) : 0;
+  renderQuotaBadge();
+  if(licenseGoi === 'ai' && luotTong > 0){
+    if(luotConLai > luotTong*0.2) warned80 = false;
+    else if(!warned80 && luotConLai >= 0.5){
+      warned80 = true;
+      toast('⚠ Thầy đã dùng hơn 80% lượt AI (còn ' + Math.floor(luotConLai) + ' lượt). Hết lượt vẫn dùng được bằng key Gemini riêng ở Tab 1.');
+    }
+  }
+}
+function renderQuotaBadge(){
+  const el = document.getElementById('quotaBadge');
+  if(!el) return;
+  if(licenseGoi !== 'ai'){ el.style.display = 'none'; return; }
+  el.style.display = '';
+  el.textContent = '🤖 Còn ' + Math.floor(luotConLai) + ' lượt AI · hôm nay ' + Math.floor(luotHomNay) + '/' + tranNgay;
+}
+function useServerAI(){ return licenseGoi === 'ai' && luotConLai >= 0.5; }
+let appRendered = false;
+let licenseUnsub = null;
+let mySessionId = null;
+let kicked = false;
+let serverOffset = 0;      // chênh lệch giờ máy chủ - giờ máy khách
+let licenseExpiry = null;  // ngày hết hạn đang lưu (Date)
+let licenseActive = true;
+let licenseTimer = null;
+function nowSrv(){ return Date.now() + serverOffset; }
+function parseHetHan(v){
+  if(!v) return null;
+  if(typeof v === 'string') return new Date(v);
+  if(typeof v.toDate === 'function') return v.toDate();
+  if(v.seconds) return new Date(v.seconds * 1000);
+  return null;
+}
+function enforceLicense(){
+  const bad = !licenseActive || !licenseExpiry || isNaN(licenseExpiry.getTime()) || licenseExpiry.getTime() < nowSrv();
+  if(bad){
+    if(licenseUnsub){ licenseUnsub(); licenseUnsub = null; }
+    if(licenseTimer){ clearInterval(licenseTimer); licenseTimer = null; }
+    kicked = true;
+    const ngayStr = licenseExpiry && !isNaN(licenseExpiry.getTime()) ? licenseExpiry.toLocaleDateString('vi-VN') : '';
+    fbAuth.signOut().then(()=>{
+      setAuthMsg('Tài khoản đã hết hạn sử dụng' + (ngayStr?` (${ngayStr})`:'') + '. Vui lòng liên hệ để gia hạn.', 'err');
+    });
+    return false;
+  }
+  return true;
+}
+
+function setAuthMsg(text, cls){
+  const el = document.getElementById('authMsg');
+  el.textContent = text || '';
+  el.className = cls || '';
+}
+
+function getDeviceSessionId(uid){
+  const key = 'devSession_' + uid;
+  let v = localStorage.getItem(key);
+  if(!v){
+    v = (crypto.randomUUID ? crypto.randomUUID() : (Date.now()+'-'+Math.random().toString(36).slice(2)));
+    localStorage.setItem(key, v);
+  }
+  return v;
+}
+
+function doLogin(){
+  const email = document.getElementById('authEmail').value.trim();
+  const pass = document.getElementById('authPass').value;
+  if(!email || !pass){ setAuthMsg('Vui lòng nhập đầy đủ email và mật khẩu.', 'err'); return; }
+  document.getElementById('authBtn').disabled = true;
+  kicked = false;
+  setAuthMsg('Đang đăng nhập...', '');
+  fbAuth.signInWithEmailAndPassword(email, pass)
+    .catch(err=>{
+      document.getElementById('authBtn').disabled = false;
+      let msg = 'Đăng nhập thất bại.';
+      if(err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found'){
+        msg = 'Sai email hoặc mật khẩu.';
+      } else if(err.code === 'auth/too-many-requests'){
+        msg = 'Bạn thử sai quá nhiều lần, vui lòng đợi rồi thử lại.';
+      }
+      setAuthMsg(msg, 'err');
+    });
+}
+
+function doLogout(){
+  warned80 = false; licenseGoi = 'coban'; renderQuotaBadge();
+  if(licenseUnsub){ licenseUnsub(); licenseUnsub = null; }
+  if(licenseTimer){ clearInterval(licenseTimer); licenseTimer = null; }
+  fbAuth.signOut();
+}
+
+async function checkLicenseAndEnter(user){
+  setAuthMsg('Đang kiểm tra tài khoản...', '');
+  try{
+    const ref = fbDb.collection('licenses').doc(user.uid);
+    const doc = await ref.get();
+    if(!doc.exists){
+      setAuthMsg('Tài khoản chưa được cấp quyền sử dụng. Liên hệ người bán để được hỗ trợ.', 'err');
+      fbAuth.signOut();
+      return;
+    }
+    const data = doc.data();
+    let hetHan = null;
+    if(data.ngayHetHan){
+      if(typeof data.ngayHetHan === 'string'){
+        hetHan = new Date(data.ngayHetHan);
+      } else if(typeof data.ngayHetHan.toDate === 'function'){
+        hetHan = data.ngayHetHan.toDate();
+      } else if(data.ngayHetHan.seconds){
+        hetHan = new Date(data.ngayHetHan.seconds * 1000);
+      }
+    }
+    const active = data.active !== false;
+    if(!active || !hetHan || isNaN(hetHan.getTime()) || hetHan.getTime() < Date.now()){
+      const ngayStr = hetHan && !isNaN(hetHan.getTime()) ? hetHan.toLocaleDateString('vi-VN') : '';
+      setAuthMsg('Tài khoản đã hết hạn sử dụng' + (ngayStr?` (${ngayStr})`:'') + '. Vui lòng liên hệ để gia hạn.', 'err');
+      fbAuth.signOut();
+      return;
+    }
+    // Hợp lệ -> đăng ký thiết bị này là thiết bị đang hoạt động
+    mySessionId = getDeviceSessionId(user.uid);
+    await ref.update({
+      activeSession: mySessionId,
+      activeSessionAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    // Lấy giờ máy chủ để chống chỉnh đồng hồ máy khách
+    try{
+      const sv = await ref.get({source:'server'});
+      const st = sv.data().activeSessionAt;
+      if(st && st.toDate){ serverOffset = st.toDate().getTime() - Date.now(); }
+    }catch(_){}
+    licenseExpiry = hetHan; licenseActive = active;
+    if(!enforceLicense()) return;
+    try{ const cur = await ref.get(); applyQuota(cur.data()); }catch(_){ applyQuota(data); }
+    if(licenseTimer){ clearInterval(licenseTimer); }
+    licenseTimer = setInterval(enforceLicense, 60000);
+    if(licenseUnsub){ licenseUnsub(); }
+    licenseUnsub = ref.onSnapshot(snap=>{
+      const d = snap.data();
+      if(!d) return;
+      licenseExpiry = parseHetHan(d.ngayHetHan);
+      licenseActive = d.active !== false;
+      if(!enforceLicense()) return;
+      applyQuota(d);
+      if(d.activeSession && d.activeSession !== mySessionId){
+        kicked = true;
+        if(licenseUnsub){ licenseUnsub(); licenseUnsub = null; }
+        fbAuth.signOut().then(()=>{
+          setAuthMsg('Tài khoản này vừa được đăng nhập ở một thiết bị khác nên bạn đã bị đăng xuất.', 'warn');
+        });
+      }
+    });
+    document.getElementById('authScreen').style.display = 'none';
+    document.getElementById('appContainer').style.display = '';
+    if(!appRendered){ appRendered = true; render(); }
+  }catch(e){
+    setAuthMsg('Không kiểm tra được tài khoản. Kiểm tra kết nối mạng và thử lại.', 'err');
+    fbAuth.signOut();
+  }
+}
+
+fbAuth.onAuthStateChanged(user=>{
+  document.getElementById('authBtn').disabled = false;
+  if(user){
+    checkLicenseAndEnter(user);
+  }else{
+    document.getElementById('authScreen').style.display = 'flex';
+    document.getElementById('appContainer').style.display = 'none';
+    if(!kicked) setAuthMsg('', '');
+    kicked = false;
+  }
+});
+/* ---------------- STATE ---------------- */
+const LEVELS = ["NB","TH","VD"];
+const LEVEL_LABEL = {NB:"Biết", TH:"Hiểu", VD:"Vận dụng"};
+const SPEC_LABEL = {NB:"Biết", TH:"Hiểu", VD:"VD"};
+const LEVEL_VERBS = {
+  NB: ["Nêu được","Trình bày được","Kể tên được","Liệt kê được","Nhận biết được","Phát biểu được","Mô tả được","Xác định được","Chỉ ra được"],
+  TH: ["Giải thích được","Phân tích được","So sánh được","Phân loại được","Minh họa được","Tóm tắt được","Diễn giải được","Lý giải được","Phân biệt được"],
+  VD: ["Vận dụng được","Giải quyết được","Đề xuất được","Thực hiện được","Tính toán được","Thiết kế được","Đánh giá được","Liên hệ thực tế để giải thích","Lập kế hoạch để"]
+};
+
+const DANG_INFO = {
+  nhieu_lua_chon:{label:"Nhiều lựa chọn", group:"TNKQ", kind:"cau"},
+  dung_sai:{label:"Đúng – Sai", group:"TNKQ", kind:"dung_sai"},
+  tra_loi_ngan:{label:"Trả lời ngắn", group:"TNKQ", kind:"cau"},
+  tu_luan:{label:"Tự luận", group:"TL", kind:"cau"},
+  khac:{label:"Khác", group:"TNKQ", kind:"cau"}
+};
+const AI_RULE_LABELS = {
+  chung:"Quy tắc chung", chinh_xac:"Đúng sách giáo khoa & chính xác", nhieu_lua_chon:"Nhiều lựa chọn", dung_sai:"Đúng – Sai", tra_loi_ngan:"Trả lời ngắn", tu_luan:"Tự luận"
+};
+const DEFAULT_AI_RULES = {
+  chung:"- Câu hỏi chỉ một ý, nêu thẳng yêu cầu, khoảng 25 từ trở xuống, không dẫn dắt dài, không lặp từ.\n- Đáp án ngắn gọn, đủ ý; giải thích tối đa một câu.\n- Bám đúng mức độ, yêu cầu cần đạt và phạm vi bài đã cho; không lấy kiến thức bài khác; không trùng ý các câu đã có.\n- Viết đúng kí hiệu bằng ký tự Unicode: H₂O, CO₂, m², 10³, 30° (không viết H2O, 300).\n- Không dùng markdown (không ** hay #).\n- Nếu thiếu thông tin để ra câu đúng, không tự đoán: chỉ hỏi lại giáo viên một câu ngắn.",
+  chinh_xac:"- Chỉ dùng kiến thức, thuật ngữ, kí hiệu, công thức, phương trình, số liệu đúng như sách giáo khoa đang dạy. Nếu có phần NỘI DUNG SÁCH GIÁO KHOA thì chỉ lấy từ đó, không thêm kiến thức ngoài.\n- Không dùng khái niệm, thuật ngữ của lớp cao hơn hoặc của bài chưa học; không dùng từ trong danh sách CẤM.\n- Không bịa số liệu, mốc, tỉ lệ. Số liệu phải có trong sách giáo khoa hoặc là bài toán tự đặt tính ra được. Không chắc thì không hỏi, và trả về ===CANHOI===.\n- Chỉ MỘT đáp án đúng, không gây tranh cãi. Không hỏi kiểu có nhiều đáp án như \"dưới bao nhiêu\", \"ít nhất bao nhiêu\", \"tối đa bao nhiêu\" khi sách không nêu một giá trị cố định.\n- Hạn chế câu chỉ đếm danh sách (\"có bao nhiêu yếu tố/đơn vị...\"); hỏi nội dung có ý nghĩa thay vì đếm.\n- Mức Biết: nhớ lại đúng khái niệm, nội dung trong sách. Mức Hiểu: giải thích, so sánh, phân biệt, không chỉ nhớ. Mức Vận dụng: tình huống thực tế mới hoặc bài tính cần kiến thức của môn, không phải phép toán thuần túy (tỉ lệ, cộng trừ) không có kiến thức môn học.\n- Phương án nhiễu hợp lý, cùng loại và cùng độ dài với đáp án đúng, liên quan đến bài; không dùng phương án phi lý (như \"kĩ năng ca hát\"). Đáp án đúng không được dài hay chi tiết hơn rõ rệt.\n- Phương trình, sơ đồ, quy trình, thí nghiệm phải đúng chiều và đúng thứ tự như sách giáo khoa; không tự thêm chiều phản ứng hay bước khác sách.\n- Câu dựa vào hình: mô tả hình phải khớp với đáp án, đồ thị và sơ đồ phải ghi đơn vị, không có chú thích thừa hay chú thích làm lộ hoặc làm sai đáp án.\n- Chỉ ra câu thuộc phần kiến thức nào của bài trong phần giải thích.",
+  nhieu_lua_chon:"- Đúng 4 phương án A, B, C, D, mỗi phương án một dòng, khoảng 12 từ trở xuống, cùng cấu trúc.\n- Các phương án không trùng nhau; chỉ một đáp án đúng.\n- Không dùng \"Tất cả đều đúng/sai\", \"Cả A và B\".",
+  dung_sai:"- Một tình huống dẫn chung (khoảng 40 từ trở xuống), sau đó 4 ý a), b), c), d); mỗi ý một khẳng định ngắn (khoảng 20 từ trở xuống), kiểm chứng được.\n- Số ý đúng/sai tuỳ nội dung, không theo khuôn cố định; nên có cả ý đúng lẫn ý sai.",
+  tra_loi_ngan:"- Đáp án ưu tiên là MỘT con số; đơn vị in sẵn sau chỗ trống; chỉ một đáp án duy nhất; nêu rõ cách làm tròn nếu cần.\n- Chỉ dùng từ hoặc kí hiệu khi nội dung không thể ra số.",
+  tu_luan:"- Đề gọn, yêu cầu rõ.\n- Đáp án chia thành từng ý, mỗi ý một dòng ngắn, ghi điểm cuối dòng, ví dụ: Công thức v = s/t (0,5đ). Tổng điểm các ý bằng điểm của câu."
+};
+// Kiểu đáp án của câu Trả lời ngắn: so = điền số, chu = điền từ/cụm từ, ca_hai = số hoặc chữ tùy nội dung
+const KIEU_DAP_AN={so:'Điền số', chu:'Điền chữ', ca_hai:'Số hoặc chữ'};
+function kieuOf(f){ return KIEU_DAP_AN[f&&f.kieuDapAn] ? f.kieuDapAn : 'so'; }
+const TLN_RULES={
+  so:null,
+  chu:"- Đáp án là MỘT từ hoặc cụm từ ngắn (tối đa 5 từ), là thuật ngữ chuẩn trong sách giáo khoa; không phải là số.\n- Chỉ một đáp án đúng duy nhất, tránh nội dung có nhiều cách diễn đạt khác nhau; chỗ trống đặt ở từ khóa của yêu cầu cần đạt.",
+  ca_hai:"- Đáp án là MỘT con số HOẶC một từ/cụm từ ngắn (tối đa 5 từ), chọn loại nào phù hợp nhất với yêu cầu cần đạt.\n- Nếu là số: đơn vị in sẵn sau chỗ trống, nêu rõ cách làm tròn nếu cần. Nếu là chữ: dùng thuật ngữ chuẩn trong sách giáo khoa.\n- Chỉ một đáp án đúng duy nhất."
+};
+function inferDang(f){
+  if(f.kind==='dung_sai') return 'dung_sai';
+  const n=(f.name||'').toLowerCase();
+  if(f.group==='TL' || n.includes('tự luận')) return 'tu_luan';
+  if(n.includes('lựa chọn') || n.includes('trắc nghiệm')) return 'nhieu_lua_chon';
+  if(n.includes('ngắn')) return 'tra_loi_ngan';
+  return 'khac';
+}
+// Làm sạch dữ liệu đề đọc từ file sao lưu / bộ nhớ: ép kiểu số, giới hạn id và giá trị chọn sẵn
+// để file .json bị sửa độc hại không chèn được mã vào trang.
+const own=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
+function safeId(v){ return String(v==null?'':v).replace(/[^\w-]/g,'_').slice(0,60) || 'x'; }
+function safeNum(v,def,min,max){ let n=Number(v); if(!isFinite(n)) n=def; if(min!=null&&n<min) n=min; if(max!=null&&n>max) n=max; return n; }
+function sanitizeState(s){
+  if(!s || typeof s!=='object') s={};
+  const d=defaultState();
+  s.info=(s.info && typeof s.info==='object') ? s.info : {};
+  ['tyLeNB','tyLeTH','tyLeVD'].forEach(k=>{ s.info[k]=safeNum(s.info[k], d.info[k], 0, 100); });
+  ['ten','mon','lop','thoiGian','loai','truong','to','gv','ttcm','tuanTiet','ngay','lopApDung','namHoc','sach'].forEach(k=>{
+    if(s.info[k]!=null && typeof s.info[k]!=='string') s.info[k]=String(s.info[k]);
+  });
+  s.info.kiemPhamVi = s.info.kiemPhamVi==='tietkiem' ? 'tietkiem' : 'all';
+  ['hienThucHanh','kiemChung'].forEach(k=>{ if(s.info[k]!==undefined) s.info[k]=!!s.info[k]; });
+  s.reallocRounds=safeNum(s.reallocRounds,0,0,100);
+  { const bb={}, src=(s.badBuckets && typeof s.badBuckets==='object')?s.badBuckets:{}; Object.keys(src).forEach(k=>{ bb[k.replace(/[^\w|-]/g,'_')]=safeNum(src[k],0,0,100); }); s.badBuckets=bb; }
+  s.examKey=safeId(s.examKey || ('de_'+Date.now()));
+  s.formats=(Array.isArray(s.formats)?s.formats:d.formats).filter(f=>f && typeof f==='object').map(f=>{
+    const dang = own(DANG_INFO,f.dang) ? f.dang : (f.dang===undefined ? undefined : 'khac');
+    const o=Object.assign({},f,{
+      id:safeId(f.id), name:String(f.name==null?'':f.name),
+      tongSoCau:safeNum(f.tongSoCau,0,0,200), tongDiem:safeNum(f.tongDiem,0,0,100), soYMoiCau:safeNum(f.soYMoiCau,1,1,10),
+      group:f.group==='TL'?'TL':'TNKQ', kind:f.kind==='dung_sai'?'dung_sai':'cau',
+      choLevels:(Array.isArray(f.choLevels)?f.choLevels:[]).filter(l=>LEVELS.includes(l))
+    });
+    if(dang) o.dang=dang; else delete o.dang;
+    if(o.kieuDapAn!==undefined && !own(KIEU_DAP_AN,o.kieuDapAn)) o.kieuDapAn='so';
+    if(o.dsMode!==undefined && !['deu','chuan','tuy_chinh'].includes(o.dsMode)) delete o.dsMode;
+    if(Array.isArray(o.dsBang)) o.dsBang=o.dsBang.map(x=>safeNum(x,0,0,100)); else delete o.dsBang;
+    return o;
+  });
+  s.version = (+s.version>=2) ? 2 : (+s.version||1);
+  s.topics=(Array.isArray(s.topics)?s.topics:[]).filter(t=>t && typeof t==='object').map(t=>{
+    const fixLv=lv=>{ lv=(lv && typeof lv==='object')?lv:{}; const al={};
+      Object.keys((lv.alloc && typeof lv.alloc==='object')?lv.alloc:{}).forEach(k=>{ al[safeId(k)]=safeNum(lv.alloc[k],0,0,500); });
+      return {yccd:String(lv.yccd==null?'':lv.yccd), alloc:al}; };
+    const o=Object.assign({},t,{id:safeId(t.id), name:String(t.name==null?'':t.name)});
+    if(Array.isArray(t.units)) o.units=t.units.filter(u=>u && typeof u==='object').map(u=>{
+      const lv=(u.levels && typeof u.levels==='object')?u.levels:{};
+      return Object.assign({},u,{id:safeId(u.id), name:String(u.name==null?'':u.name), tietHoc:safeNum(u.tietHoc,1,0,500),
+        sgk:String(u.sgk==null?'':u.sgk), ngoai:String(u.ngoai==null?'':u.ngoai), khongKT:!!u.khongKT,
+        levels:{NB:fixLv(lv.NB),TH:fixLv(lv.TH),VD:fixLv(lv.VD)}});
+    });
+    else if(t.levels && typeof t.levels==='object'){ // đề cũ (phân bổ theo chủ đề)
+      o.levels={NB:fixLv(t.levels.NB),TH:fixLv(t.levels.TH),VD:fixLv(t.levels.VD)};
+      o.tietHoc=safeNum(t.tietHoc,1,0,500); o.noiDung=String(t.noiDung==null?'':t.noiDung);
+    }
+    return o;
+  });
+  // câu hỏi: khóa chỉ gồm chữ, số, _, -, | (khớp với id đã làm sạch); câu cũ (prev) làm sạch như câu hiện tại
+  const cleanQ=(q,deep)=>{
+    if(!q || typeof q!=='object') return null; const o={};
+    ['noidung','dapan','giaithich','trichdan','canhoi','kiem','sig','ysig','hinhMoTa'].forEach(f=>{ if(q[f]!==undefined) o[f]=String(q[f]); });
+    if(q.hinh && typeof q.hinh==='object' && typeof q.hinh.data==='string' && /^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(q.hinh.data))
+      o.hinh={data:q.hinh.data, w:safeNum(q.hinh.w,100,1,4000), h:safeNum(q.hinh.h,100,1,4000)};
+    if(deep && q.prev){ const pv=cleanQ(q.prev,false); if(pv) o.prev=pv; }
+    return o;
+  };
+  const qs={}, src=(s.questions && typeof s.questions==='object')?s.questions:{};
+  Object.keys(src).forEach(k=>{ const o=cleanQ(src[k],true); if(o) qs[k.replace(/[^\w|-]/g,'_')]=o; });
+  s.questions=qs;
+  if(s.aiRules && typeof s.aiRules==='object'){ const r={}; Object.keys(s.aiRules).forEach(k=>{ if(typeof s.aiRules[k]==='string') r[k]=s.aiRules[k]; }); s.aiRules=r; } else delete s.aiRules;
+  return s;
+}
+// Bổ sung các trường mới cho đề cũ (đọc từ bộ nhớ hoặc file sao lưu)
+function ensureStateDefaults(s){
+  s = sanitizeState(s);
+  const d = defaultState();
+  s.info = Object.assign({}, d.info, s.info||{});
+  migrateV2(s);
+  (s.formats||[]).forEach(f=>{ if(!f.dang) f.dang=inferDang(f); if(!f.group) f.group=DANG_INFO[f.dang].group; if(f.dang==='tra_loi_ngan' && !KIEU_DAP_AN[f.kieuDapAn]) f.kieuDapAn='so'; });
+  s.aiRules = Object.assign({}, DEFAULT_AI_RULES, s.aiRules||{});
+  return s;
+}
+function setDang(idx,v){
+  const f=state.formats[idx], di=DANG_INFO[v];
+  f.dang=v; f.group=di.group; f.kind=di.kind; if(v==='tra_loi_ngan' && !KIEU_DAP_AN[f.kieuDapAn]) f.kieuDapAn='so';
+  f.soYMoiCau = (v==='dung_sai') ? (f.soYMoiCau>1?f.soYMoiCau:4) : 1;
+  render();
+}
+// Bảng điểm câu Đúng–Sai theo số ý đúng (chỉ dùng cho hướng dẫn chấm; ma trận vẫn tính đều theo ý)
+function dsBangOf(f){
+  const per=+f.soYMoiCau||4, dc=diemMoiCauThuc(f);
+  if(f.dsMode==='chuan' && per===4) return [0.1,0.25,0.5,1].map(x=>fmt(x*dc));
+  if(f.dsMode==='tuy_chinh' && Array.isArray(f.dsBang) && f.dsBang.length===per) return f.dsBang.map(Number);
+  return Array.from({length:per},(_,j)=>fmt(dc*(j+1)/per));
+}
+function setDsMode(idx,m){ state.formats[idx].dsMode=m; render(); }
+function setDsVal(idx,j,v){
+  const f=state.formats[idx]; const b=dsBangOf(f);
+  b[j]=Math.max(0,+v||0); f.dsBang=b; f.dsMode='tuy_chinh'; render();
+}
+function viewDsScoring(){
+  const list=state.formats.map((f,idx)=>({f,idx})).filter(x=>x.f.kind==='dung_sai');
+  if(!list.length) return '';
+  let h=`<div class="card"><h2>Cách chấm câu Đúng – Sai</h2>
+  <p class="muted" style="margin-bottom:10px;">Bảng này dùng cho hướng dẫn chấm. Ma trận và đặc tả vẫn tính điểm đều theo từng ý.</p>`;
+  list.forEach(({f,idx})=>{
+    const b=dsBangOf(f), dc=diemMoiCauThuc(f), per=+f.soYMoiCau||4;
+    const mode=(f.dsMode==='chuan'||f.dsMode==='tuy_chinh')?f.dsMode:'deu';
+    const okMax=Math.abs(b[b.length-1]-dc)<0.001;
+    h+=`<div class="topic-block"><b>${esc(f.name)}</b> <span class="muted">— mỗi câu tối đa ${fmt(dc)} điểm</span>
+      <div class="flex" style="margin:8px 0;">
+        <button class="small ${mode==='deu'?'primary':''}" onclick="setDsMode(${idx},'deu')">Đều nhau (như mẫu)</button>
+        ${per===4?`<button class="small ${mode==='chuan'?'primary':''}" onclick="setDsMode(${idx},'chuan')">Thang 0,1 – 0,25 – 0,5 – 1,0</button>`:''}
+        <span class="pill ${mode==='tuy_chinh'?'ok':''}" style="${mode==='tuy_chinh'?'':'display:none'}">Tự chỉnh</span>
+      </div>
+      <div class="alloc-row">${b.map((v,j)=>`<div class="alloc-cell"><span>Đúng ${j+1} ý</span><input type="number" step="0.05" min="0" value="${v}" onchange="setDsVal(${idx},${j},this.value)"></div>`).join('')}</div>
+      ${okMax?'':`<p style="margin-top:8px;"><span class="pill bad">Đúng đủ ${per} ý phải bằng ${fmt(dc)} điểm</span></p>`}
+    </div>`;
+  });
+  return h+`</div>`;
+}
+function viewAiRules(){
+  const r=state.aiRules||DEFAULT_AI_RULES;
+  let h=`<div class="card"><h2>Quy tắc AI soạn câu hỏi</h2>
+  <p class="muted" style="margin-bottom:10px;">AI luôn làm theo các quy tắc này khi soạn câu hỏi và đáp án. Thầy sửa trực tiếp được.</p>`;
+  Object.keys(AI_RULE_LABELS).forEach(k=>{
+    h+=`<div style="margin-bottom:10px;"><label>${AI_RULE_LABELS[k]}</label><textarea rows="4" oninput="state.aiRules['${k}']=this.value">${esc(r[k]||'')}</textarea></div>`;
+  });
+  return h+`<button class="small" onclick="resetAiRules()">Đặt lại quy tắc mặc định</button></div>`;
+}
+function resetAiRules(){
+  if(!confirm("Đặt lại tất cả quy tắc AI về mặc định?")) return;
+  state.aiRules=JSON.parse(JSON.stringify(DEFAULT_AI_RULES)); render();
+}
+
+function defaultState(){
+  return {
+    examKey: "de_" + Date.now(),
+    info: {
+      ten: "Đề kiểm tra giữa kỳ", mon: "Khoa học tự nhiên", lop: "7",
+      thoiGian: "60-90 phút", loai: "Giữa kỳ",
+      truong: "", to: "", gv: "", ttcm: "", tuanTiet: "", ngay: "", lopApDung: "", namHoc: "", hienThucHanh: true, sach: "Kết nối tri thức với cuộc sống", kiemChung: true,
+      tyLeNB: 40, tyLeTH: 30, tyLeVD: 30
+    },
+    formats: [
+      {id:"tnkq", dang:"nhieu_lua_chon", name:"Nhiều lựa chọn", group:"TNKQ", kind:"cau", tongSoCau:12, tongDiem:3, soYMoiCau:1, choLevels:["NB","TH","VD"]},
+      {id:"dungsai", dang:"dung_sai", name:"Đúng – Sai", group:"TNKQ", kind:"dung_sai", tongSoCau:2, tongDiem:2, soYMoiCau:4, choLevels:["NB","TH","VD"]},
+      {id:"dienso", dang:"tra_loi_ngan", name:"Trả lời ngắn", group:"TNKQ", kind:"cau", tongSoCau:4, tongDiem:2, soYMoiCau:1, choLevels:["NB","TH","VD"]},
+      {id:"tuluan", dang:"tu_luan", name:"Tự luận", group:"TL", kind:"cau", tongSoCau:3, tongDiem:3, soYMoiCau:1, choLevels:["TH","VD"]}
+    ],
+    version: 2,
+    topics: [
+      {id:"t1", name:"Chủ đề 1", units:[ newUnit("Bài 1",1) ]}
+    ],
+    // câu hỏi thực tế: key = topicId|level|formatId|index -> {noidung, dapan}
+    questions: {},
+    aiRules: JSON.parse(JSON.stringify(DEFAULT_AI_RULES))
+  };
+}
+
+let state = defaultState();
+let activeTab = "setup";
+
+/* ---------------- HELPERS ---------------- */
+function diemMoiCau(f){
+  if(f.tongSoCau<=0) return 0;
+  if(f.kind==="dung_sai"){
+    return f.tongDiem/(f.tongSoCau*f.soYMoiCau);
+  }
+  return f.tongDiem/f.tongSoCau;
+}
+// Điểm thực nhận được cho 1 CÂU (không phải 1 ý) - dùng để cộng tổng điểm theo số câu đã phân bổ
+function diemMoiCauThuc(f){
+  if(f.tongSoCau<=0) return 0;
+  return f.tongDiem/f.tongSoCau;
+}
+function fmt(n){ return Math.round(n*1000)/1000; }
+
+function uid(p){ return p+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+// Số "đơn vị phân bổ" của 1 hình thức: câu thường tính theo câu, câu Đúng–Sai tính theo Ý
+function soDonVi(f){ return f.kind==='dung_sai' ? (+f.tongSoCau||0)*(+f.soYMoiCau||0) : (+f.tongSoCau||0); }
+function diemDV(f){ const n=soDonVi(f); return n>0 ? f.tongDiem/n : 0; }
+function allUnits(){ const r=[]; state.topics.forEach(t=>t.units.forEach(u=>r.push({topic:t,unit:u}))); return r; }
+function newUnit(name,tiet){ return {id:uid('u'), name:name||'Bài mới', tietHoc:(tiet==null?1:tiet), sgk:'', ngoai:'', levels:{NB:{yccd:'',alloc:{}},TH:{yccd:'',alloc:{}},VD:{yccd:'',alloc:{}}}}; }
+function sumAllocForFormat(fid){ let s=0; allUnits().forEach(({unit})=>LEVELS.forEach(l=>{ s+=unit.levels[l].alloc[fid]||0; })); return s; }
+function sumDiemForLevel(level){ let s=0; allUnits().forEach(({unit})=>state.formats.forEach(f=>{ s+=(unit.levels[level].alloc[f.id]||0)*diemDV(f); })); return s; }
+function tongDiemDe(){ return state.formats.reduce((s,f)=>s+f.tongDiem,0); }
+// Số tiết của chủ đề tính cả bài thực hành. Chủ đề chỉ toàn bài thực hành không có câu nào nên không tính vào phần điểm.
+function tietTopic(t){ return testUnits(t).length ? t.units.reduce((s,u)=>s+(+u.tietHoc||0),0) : 0; }
+// Bài thực hành / không kiểm tra: không phân bổ câu, không đưa vào ma trận và đặc tả
+function testUnits(t){ return t.units.filter(u=>!u.khongKT); }
+function testTopics(){ return state.topics.filter(t=>testUnits(t).length); }
+// Bài/chủ đề hiển thị trong ma trận và đặc tả: có thể gồm cả bài thực hành (không có câu) tùy lựa chọn
+function shownUnits(t){ return state.info.hienThucHanh===false ? testUnits(t) : t.units; }
+function shownTopics(){ return state.topics.filter(t=>shownUnits(t).length); }
+function toggleKhongKT(ti,ui,v){
+  const u=state.topics[ti].units[ui];
+  const n=LEVELS.reduce((a,l)=>a+Object.values(u.levels[l].alloc).reduce((x,y)=>x+y,0),0);
+  if(v && n && !confirm('Bài này đang được phân bổ '+n+' câu. Bỏ các câu đó và không đưa bài vào đề?')){ render(); return; }
+  u.khongKT=!!v;
+  if(v) LEVELS.forEach(l=>{ u.levels[l].alloc={}; });
+  render();
+}
+function tongTietHoc(){ return state.topics.reduce((s,t)=>s+tietTopic(t),0); }
+function diemUnit(u){ let s=0; LEVELS.forEach(l=>state.formats.forEach(f=>{ s+=(u.levels[l].alloc[f.id]||0)*diemDV(f); })); return s; }
+function diemDaPhanBoTopic(t){ return t.units.reduce((s,u)=>s+diemUnit(u),0); }
+// Chuyển đề cũ (phân bổ theo chủ đề, câu Đúng–Sai tính theo câu) sang cấu trúc mới (theo bài, Đúng–Sai tính theo ý)
+function migrateV2(s){
+  s.questions=s.questions||{};
+  if(s.version>=2 && s.topics.every(t=>t.units)){ return s; }
+  const ds=s.formats.filter(f=>f.kind==='dung_sai'), di={}; ds.forEach(f=>di[f.id]=0);
+  s.topics=s.topics.map(t=>{
+    if(t.units) return t;
+    const lv=t.levels;
+    ds.forEach(f=>LEVELS.forEach(l=>{
+      const n=lv[l].alloc[f.id]||0;
+      for(let k=0;k<n;k++){ const ok=`${t.id}|${l}|${f.id}|${k}`; if(s.questions[ok]){ s.questions[`${f.id}|ds|${di[f.id]}`]=s.questions[ok]; delete s.questions[ok]; } di[f.id]++; }
+      if(n) lv[l].alloc[f.id]=n*(+f.soYMoiCau||1);
+    }));
+    const nd=(t.noiDung||'').split(/\n+/).map(x=>x.trim()).filter(Boolean).join('; ');
+    return {id:t.id, name:t.name, units:[{id:t.id, name:nd||t.name, tietHoc:t.tietHoc, levels:lv}]};
+  });
+  s.version=2; return s;
+}
+
+function toast(msg){
+  const d=document.createElement('div'); d.className='toast'; d.textContent=msg;
+  document.body.appendChild(d); setTimeout(()=>d.remove(),Math.max(2200,String(msg).length*70));
+}
+
+/* ---------------- PERSISTENCE ---------------- */
+// Lớp lưu trữ thống nhất: ưu tiên window.storage (khi chạy trong artifact Claude),
+// tự động chuyển sang localStorage khi mở file .html độc lập ngoài trình duyệt.
+const hasClaudeStorage = (typeof window!=='undefined' && window.storage && typeof window.storage.get==='function');
+const LS_PREFIX = 'dekiemtra_';
+const localStore = {
+  async get(key){
+    const raw = localStorage.getItem(LS_PREFIX+key);
+    if(raw===null) throw new Error('not found');
+    return { key, value: raw };
+  },
+  async set(key, value){
+    localStorage.setItem(LS_PREFIX+key, value);
+    return { key, value };
+  }
+};
+const store = hasClaudeStorage ? window.storage : localStore;
+
+async function saveExam(){
+  try{
+    const list = await safeGet('exam_list', []);
+    if(!list.includes(state.examKey)) list.push(state.examKey);
+    await store.set('exam_list', JSON.stringify(list));
+    await store.set(state.examKey, JSON.stringify(state));
+    toast("Đã lưu: " + state.info.ten + (hasClaudeStorage?'':' (lưu trên trình duyệt này)'));
+  }catch(e){ toast("Lỗi lưu: "+e.message); }
+}
+async function safeGet(key, fallback){
+  try{
+    const r = await store.get(key);
+    return r ? JSON.parse(r.value) : fallback;
+  }catch(e){ return fallback; }
+}
+async function openLoadDialog(){
+  const list = await safeGet('exam_list', []);
+  if(list.length===0){ toast("Chưa có đề nào được lưu."); return; }
+  const items = [];
+  for(const k of list){
+    const d = await safeGet(k,null);
+    if(d) items.push({key:k, label:`${d.info.ten} – ${d.info.mon} lớp ${d.info.lop}`});
+  }
+  const choice = prompt("Nhập số thứ tự đề muốn mở:\n" + items.map((it,i)=>`${i+1}. ${it.label}`).join("\n"));
+  const idx = parseInt(choice)-1;
+  if(items[idx]){
+    const d = await safeGet(items[idx].key, null);
+    if(d){ state = ensureStateDefaults(d); render(); toast("Đã mở: "+d.info.ten); }
+  }
+}
+function newExam(){
+  if(confirm("Tạo đề mới? (đề hiện tại nếu chưa lưu sẽ mất)")){
+    state = defaultState(); render();
+  }
+}
+function exportBackupJson(){
+  const filename = 'sao_luu_' + (state.info.ten||'de_kiem_tra').replace(/\s+/g,'_') + '.json';
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('✓ Đã tải file sao lưu: ' + filename);
+}
+function importBackupJson(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const parsed = JSON.parse(e.target.result);
+      if(!parsed || typeof parsed!=='object' || !parsed.info || typeof parsed.info!=='object'){ toast('File sao lưu không hợp lệ.'); return; }
+      state = ensureStateDefaults(parsed);
+      render();
+      toast('✓ Đã nhập lại đề: ' + (state.info.ten||''));
+    }catch(err){
+      toast('Lỗi đọc file: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+/* ---------------- RENDER: TABS ---------------- */
+const TABS = [
+  {id:"setup", label:"1. Thiết lập"},
+  {id:"topics", label:"2. Chủ đề & Phân bổ"},
+  {id:"matrix", label:"3. Ma trận"},
+  {id:"spec", label:"4. Bản đặc tả"},
+  {id:"exam", label:"5. Đề thi"},
+  {id:"answer", label:"6. Đáp án"},
+  {id:"check", label:"7. Kiểm tra"}
+];
+function renderTabs(){
+  const nav = document.getElementById('tabBar');
+  nav.innerHTML = TABS.map(t=>`<button class="${t.id===activeTab?'active':''}" onclick="switchTab('${t.id}')">${t.label}</button>`).join('');
+}
+function switchTab(id){ activeTab=id; render(); }
+
+/* ---------------- RENDER: MAIN ---------------- */
+function render(){
+  document.getElementById('examTitleHead').textContent = state.info.ten || "Thiết kế đề kiểm tra";
+  renderTabs();
+  const m = document.getElementById('mainArea');
+  if(activeTab==="setup") m.innerHTML = viewSetup();
+  if(activeTab==="topics") m.innerHTML = viewTopics();
+  if(activeTab==="matrix") m.innerHTML = viewMatrix();
+  if(activeTab==="spec") m.innerHTML = viewSpec();
+  if(activeTab==="exam") m.innerHTML = viewExam();
+  if(activeTab==="answer") m.innerHTML = viewAnswer();
+  if(activeTab==="check") m.innerHTML = viewCheck();
+}
+
+/* ---------------- TAB 1: SETUP ---------------- */
+function viewSetup(){
+  const i = state.info;
+  let html = `<div class="card"><h2>Thông tin đề kiểm tra</h2>
+  <div class="grid cols3">
+    <div><label>Tên đề</label><input type="text" value="${esc(i.ten)}" oninput="state.info.ten=this.value;document.getElementById('examTitleHead').textContent=this.value"></div>
+    <div><label>Môn học</label><input type="text" value="${esc(i.mon)}" oninput="state.info.mon=this.value"></div>
+    <div><label>Khối lớp</label><input type="text" value="${esc(i.lop)}" oninput="state.info.lop=this.value"></div>
+    <div><label>Bộ sách giáo khoa</label><input type="text" value="${esc(i.sach||'')}" placeholder="Kết nối tri thức với cuộc sống" oninput="state.info.sach=this.value"></div>
+    <div><label>Thẩm định câu hỏi bằng AI lần 2</label><label style="display:flex;gap:8px;align-items:center;font-size:.8rem;"><input type="checkbox" style="width:auto" ${i.kiemChung===false?'':'checked'} onchange="state.info.kiemChung=this.checked"> Bật (chính xác hơn, soạn lâu hơn)</label>
+      <select style="margin-top:6px;font-size:.8rem;" onchange="state.info.kiemPhamVi=this.value"><option value="tietkiem" ${i.kiemPhamVi==='tietkiem'?'selected':''}>Tiết kiệm: chỉ Trả lời ngắn, Đúng–Sai, Tự luận</option><option value="all" ${i.kiemPhamVi!=='tietkiem'?'selected':''}>Thẩm định tất cả câu</option></select></div>
+    <div><label>Thời gian làm bài</label><input type="text" value="${esc(i.thoiGian)}" oninput="state.info.thoiGian=this.value"></div>
+    <div><label>Loại kiểm tra</label><input type="text" value="${esc(i.loai)}" oninput="state.info.loai=this.value"></div>
+    <div><label>Năm học</label><input type="text" value="${esc(i.namHoc)}" placeholder="2025-2026" oninput="state.info.namHoc=this.value"></div>
+    <div><label>Trường</label><input type="text" value="${esc(i.truong)}" oninput="state.info.truong=this.value"></div>
+    <div><label>Tổ chuyên môn</label><input type="text" value="${esc(i.to)}" oninput="state.info.to=this.value"></div>
+    <div><label>Họ tên giáo viên</label><input type="text" value="${esc(i.gv)}" oninput="state.info.gv=this.value"></div>
+    <div><label>Tổ trưởng chuyên môn</label><input type="text" value="${esc(i.ttcm)}" oninput="state.info.ttcm=this.value"></div>
+    <div><label>Tuần – Tiết</label><input type="text" value="${esc(i.tuanTiet)}" placeholder="Tuần 16 - Tiết 67,68" oninput="state.info.tuanTiet=this.value"></div>
+    <div><label>Ngày kiểm tra</label><input type="text" value="${esc(i.ngay)}" placeholder="27/12/2025" oninput="state.info.ngay=this.value"></div>
+    <div><label>Các lớp kiểm tra</label><input type="text" value="${esc(i.lopApDung)}" placeholder="7A1, 7A2, 7A3" oninput="state.info.lopApDung=this.value"></div>
+  </div></div>
+
+  <div class="card"><h2>Tỉ lệ mức độ nhận thức mục tiêu (% điểm)</h2>
+  <div class="grid cols3">
+    <div><label>Nhận biết (%)</label><input type="number" value="${i.tyLeNB}" oninput="state.info.tyLeNB=+this.value;render()"></div>
+    <div><label>Thông hiểu (%)</label><input type="number" value="${i.tyLeTH}" oninput="state.info.tyLeTH=+this.value;render()"></div>
+    <div><label>Vận dụng (%)</label><input type="number" value="${i.tyLeVD}" oninput="state.info.tyLeVD=+this.value;render()"></div>
+  </div>
+  <p class="muted" style="margin-top:8px;font-size:.78rem;">Tổng phải bằng 100%. Hiện tại: ${i.tyLeNB+i.tyLeTH+i.tyLeVD}%</p>
+  </div>
+
+  <div class="card"><h2>Hình thức câu hỏi (thêm/xóa/sửa tùy môn)</h2>
+  <table><thead><tr>
+    <th>Tên hình thức</th><th>Nhóm</th><th>Dạng</th><th>Kiểu đáp án<br><span style="text-transform:none;font-weight:400;">(trả lời ngắn)</span></th><th>Tổng số câu</th><th>Số ý/câu</th><th>Tổng điểm phần</th><th>Điểm/câu (ý)</th>
+    <th>Áp dụng mức độ</th><th></th>
+  </tr></thead><tbody>`;
+  state.formats.forEach((f,idx)=>{
+    html += `<tr>
+      <td class="left"><input type="text" value="${esc(f.name)}" oninput="state.formats[${idx}].name=this.value"></td>
+      <td><select onchange="state.formats[${idx}].group=this.value">
+        <option value="TNKQ" ${f.group==='TNKQ'?'selected':''}>TNKQ</option>
+        <option value="TL" ${f.group==='TL'?'selected':''}>Tự luận</option>
+      </select></td>
+      <td><select onchange="setDang(${idx},this.value)">${Object.keys(DANG_INFO).map(k=>`<option value="${k}" ${f.dang===k?'selected':''}>${DANG_INFO[k].label}</option>`).join('')}</select></td>
+      <td><select ${f.dang==='tra_loi_ngan'?'':'disabled'} onchange="state.formats[${idx}].kieuDapAn=this.value;render()">${Object.keys(KIEU_DAP_AN).map(k=>`<option value="${k}" ${kieuOf(f)===k?'selected':''}>${KIEU_DAP_AN[k]}</option>`).join('')}</select></td>
+      <td><input type="number" style="width:60px" value="${f.tongSoCau}" onchange="state.formats[${idx}].tongSoCau=+this.value;render()"></td>
+      <td><input type="number" style="width:55px" value="${f.soYMoiCau}" ${f.kind!=='dung_sai'?'disabled':''} onchange="state.formats[${idx}].soYMoiCau=+this.value;render()"></td>
+      <td><input type="number" step="0.25" style="width:65px" value="${f.tongDiem}" onchange="state.formats[${idx}].tongDiem=+this.value;render()"></td>
+      <td>${fmt(diemMoiCau(f))}</td>
+      <td>${LEVELS.map(l=>`<label style="display:inline-flex;gap:3px;align-items:center;margin-right:6px;font-size:.72rem;"><input type="checkbox" style="width:auto" ${f.choLevels.includes(l)?'checked':''} onchange="toggleFormatLevel(${idx},'${l}',this.checked)">${l}</label>`).join('')}</td>
+      <td><button class="small danger" onclick="removeFormat(${idx})">Xóa</button></td>
+    </tr>`;
+  });
+  html += `</tbody></table>
+  <div style="margin-top:10px;"><button onclick="addFormat()">+ Thêm hình thức câu hỏi</button></div>
+  <p class="muted" style="margin-top:8px;">Tổng điểm toàn đề: <b>${tongDiemDe()}</b> điểm</p>
+  </div>`;
+
+  html += viewDsScoring() + viewAiRules();
+
+  // Card API Key - Gemini (hỗ trợ nhiều key, tự xoay vòng khi hết hạn mức)
+  const savedKeysRaw = localStorage.getItem('gemini_api_key') || '';
+  const keyList = savedKeysRaw.split(/[\n,]+/).map(s=>s.trim()).filter(Boolean);
+  const keyStatus = keyList.length
+    ? `<span style="color:#4caf50">✓ Đã lưu ${keyList.length} key (${keyList.map(k=>k.slice(0,6)+'…').join(', ')})</span>`
+    : `<span style="color:#f59e0b">⚠ Chưa có key — tính năng AI soạn đề sẽ không hoạt động</span>`;
+  html += `<div class="card" id="card-apikey">
+  <h2>🔑 Google Gemini API Key <span style="font-size:.75rem;font-weight:normal;color:#888">(miễn phí — cần để dùng AI soạn câu hỏi khi mở file ngoài Claude.ai)</span></h2>
+  <p class="muted" style="margin-bottom:10px;">Lấy key miễn phí tại <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a> → đăng nhập Gmail → <b>Get API key → Create API key</b>. Có thể tạo nhiều key từ nhiều tài khoản Google khác nhau, mỗi dòng 1 key — hết hạn mức key này, app tự chuyển sang key kế tiếp. Key chỉ lưu trên máy này.</p>
+  <textarea id="apikey-input" placeholder="AIza... (mỗi dòng 1 key nếu có nhiều key)" rows="3" style="width:100%;font-family:monospace;font-size:.85rem;">${esc(savedKeysRaw)}</textarea>
+  <div class="flex" style="gap:10px;align-items:center;margin-top:8px;">
+    <button class="primary" onclick="saveApiKey()">💾 Lưu key</button>
+    ${keyList.length ? `<button class="danger small" onclick="clearApiKey()">Xóa hết</button>` : ''}
+  </div>
+  <p style="margin-top:8px;font-size:.82rem;">${keyStatus}</p>
+  </div>`;
+  html += viewOpenAiCard();
+
+  return html;
+}
+let openaiIdx = 0;
+function getOpenAIKeys(){
+  return (localStorage.getItem('openai_api_key')||'').split(/[\n,]+/).map(x=>x.trim()).filter(Boolean);
+}
+function rotateOpenAIKey(){
+  if(openaiIdx < getOpenAIKeys().length-1){ openaiIdx++; return true; }
+  return false;
+}
+function viewOpenAiCard(){
+  const k = localStorage.getItem('openai_api_key')||'';
+  const kl = getOpenAIKeys();
+  const model = localStorage.getItem('openai_model')||'gpt-4o-mini';
+  const rs = localStorage.getItem('ai_role_soan') || 'openai';
+  const rk = localStorage.getItem('ai_role_kiem') || 'gemini';
+  const opt=(v,cur,t)=>`<option value="${v}" ${v===cur?'selected':''}>${t}</option>`;
+  const st = kl.length ? `<span style="color:#4caf50">✓ Đã lưu ${kl.length} key OpenAI (${kl.map(x=>esc(x.slice(0,7))+'…').join(', ')})</span>` : `<span style="color:#f59e0b">⚠ Chưa có key OpenAI — app sẽ dùng Gemini cho mọi việc</span>`;
+  return `<div class="card" id="card-openai">
+  <h2>🔑 OpenAI API Key <span style="font-size:.75rem;font-weight:normal;color:#888">(tùy chọn — tách riêng với Gemini để chia tải)</span></h2>
+  <p class="muted" style="margin-bottom:10px;">Lấy key tại <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a>. API OpenAI <b>tính phí theo lượng dùng</b> (cần nạp credit), không đi kèm gói ChatGPT Plus. Có thể nhập nhiều key (mỗi dòng 1 key). Key chỉ lưu trên máy này.</p>
+  <textarea id="openai-key-input" rows="3" placeholder="sk-... (mỗi dòng 1 key nếu có nhiều key — hết credit hoặc bị giới hạn thì app tự chuyển key kế tiếp)" style="width:100%;font-family:monospace;font-size:.85rem;">${esc(k)}</textarea>
+  <div class="flex" style="gap:12px;flex-wrap:wrap;margin-top:8px;align-items:end;">
+    <div><label>Model OpenAI</label><select id="openai-model">${opt('gpt-4o-mini',model,'gpt-4o-mini (rẻ, nhanh)')}${opt('gpt-4.1-mini',model,'gpt-4.1-mini (chính xác hơn)')}${opt('gpt-4o',model,'gpt-4o (đắt hơn)')}</select></div>
+    <div><label>AI soạn câu hỏi</label><select id="role-soan">${opt('openai',rs,'OpenAI')}${opt('gemini',rs,'Gemini')}</select></div>
+    <div><label>AI thẩm định lần 2</label><select id="role-kiem">${opt('gemini',rk,'Gemini')}${opt('openai',rk,'OpenAI')}</select></div>
+  </div>
+  <div class="flex" style="gap:10px;align-items:center;margin-top:8px;">
+    <button class="primary" onclick="saveOpenAi()">💾 Lưu cấu hình</button>
+    ${k ? `<button class="danger small" onclick="clearOpenAi()">Xóa key OpenAI</button>` : ''}
+  </div>
+  <p style="margin-top:8px;font-size:.82rem;">${st}</p>
+  </div>`;
+}
+function saveOpenAi(){
+  const k = document.getElementById('openai-key-input').value.trim();
+  if(k) localStorage.setItem('openai_api_key', k); else localStorage.removeItem('openai_api_key');
+  openaiIdx = 0;
+  localStorage.setItem('openai_model', document.getElementById('openai-model').value);
+  localStorage.setItem('ai_role_soan', document.getElementById('role-soan').value);
+  localStorage.setItem('ai_role_kiem', document.getElementById('role-kiem').value);
+  toast('✓ Đã lưu cấu hình OpenAI.');
+  render();
+}
+function clearOpenAi(){
+  if(!confirm('Xóa key OpenAI đã lưu?')) return;
+  localStorage.removeItem('openai_api_key');
+  openaiIdx = 0;
+  toast('Đã xóa key OpenAI.');
+  render();
+}
+function getProvider(role){
+  const ok = getOpenAIKeys().length>0;
+  const gk = getApiKeys().length>0;
+  let sel = localStorage.getItem('ai_role_'+role) || (role==='soan'?'openai':'gemini');
+  if(sel==='openai' && !ok) sel='gemini';
+  if(sel==='gemini' && !gk && ok) sel='openai';
+  return sel;
+}
+async function callOpenAI(prompt,temp,mult){
+  const keys=getOpenAIKeys();
+  if(openaiIdx>=keys.length) openaiIdx=0;
+  const key=keys[openaiIdx]||'';
+  if(!key) throw new Error('Chưa nhập OpenAI API key (Tab 1).');
+  const model=localStorage.getItem('openai_model')||'gpt-4o-mini';
+  const body={ model, messages:[{role:'user',content:prompt}], max_completion_tokens:4096*(mult||1) };
+  if(!/^(gpt-5|o\d)/.test(model)) body.temperature=(temp==null?0.5:temp);
+  if(/^(gpt-5(?!-chat)|o\d)/.test(model)) body.reasoning_effort='low';
+  const response=await fetch('https://api.openai.com/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+    body:JSON.stringify(body)
+  });
+  if(!response.ok){
+    const err=await response.json().catch(()=>({}));
+    const msg=err?.error?.message||response.statusText;
+    if(['insufficient_quota','credit_balance_exhausted'].includes(err?.error?.code)){
+      const e=new Error('RATE_LIMIT'); e.isRateLimit=true; e.noCredit=true; throw e;
+    }
+    if(response.status===401) throw new Error('OpenAI API key không hợp lệ. Kiểm tra lại ở Tab 1. ('+msg+')');
+    if(response.status===404) throw new Error('Model OpenAI không tồn tại hoặc tài khoản chưa có quyền dùng. ('+msg+')');
+    if(response.status===429){
+      const e=new Error('RATE_LIMIT'); e.isRateLimit=true;
+      if(err?.error?.code==='insufficient_quota') e.noCredit=true;
+      throw e;
+    }
+    throw new Error('Lỗi OpenAI API ('+response.status+'): '+msg);
+  }
+  const data=await response.json();
+  const ch=data?.choices?.[0];
+  const text=ch?.message?.content||'';
+  if(!text) throw new Error('OpenAI không trả về nội dung (finish_reason: '+(ch?.finish_reason||'không rõ')+').');
+  if(ch?.finish_reason==='length'){
+    const e=new Error('Nội dung bị cắt cụt do vượt giới hạn độ dài. Đang thử lại...'); e.isTruncated=true; throw e;
+  }
+  return text;
+}
+async function callOpenAIWithRetry(prompt,temp){
+  const backoffs=[15000,30000,45000];
+  let attempt=0, mult=1;
+  while(attempt<4){
+    try{ return await callOpenAI(prompt,temp,mult); }
+    catch(e){
+      const isLast=attempt===3;
+      if(e.isRateLimit){
+        if(rotateOpenAIKey()){ toast(e.noCredit?'⚠ Key OpenAI hết credit — chuyển sang key kế tiếp...':'⚠ Key OpenAI bị giới hạn — chuyển sang key kế tiếp...'); continue; }
+        if(e.noCredit) throw new Error('Tất cả key OpenAI đã hết credit. Nạp thêm tại platform.openai.com hoặc chuyển sang Gemini.');
+        if(!isLast){ await sleep(backoffs[attempt]||45000); openaiIdx=0; attempt++; continue; }
+        throw new Error('OpenAI đang giới hạn tốc độ (429) trên tất cả các key. Đợi 1 phút rồi thử lại, hoặc chuyển sang Gemini.');
+      }
+      if(e.isTruncated && !isLast){ mult=Math.min(mult*2,4); await sleep(500); attempt++; continue; }
+      throw e;
+    }
+  }
+}
+function saveApiKey(){
+  const val = document.getElementById('apikey-input').value.trim();
+  if(!val){ toast("Vui lòng nhập API key."); return; }
+  localStorage.setItem('gemini_api_key', val);
+  activeKeyIndex = 0;
+  const n = val.split(/[\n,]+/).map(s=>s.trim()).filter(Boolean).length;
+  toast(`✓ Đã lưu ${n} key Gemini!`);
+  render();
+}
+function clearApiKey(){
+  if(!confirm("Xóa (các) API key đã lưu?")) return;
+  localStorage.removeItem('gemini_api_key');
+  activeKeyIndex = 0;
+  toast("Đã xóa API key.");
+  render();
+}
+function getApiKeys(){
+  return (localStorage.getItem('gemini_api_key')||'').split(/[\n,]+/).map(s=>s.trim()).filter(Boolean);
+}
+function getApiKey(){
+  const keys = getApiKeys();
+  if(!keys.length) return '';
+  if(activeKeyIndex >= keys.length) activeKeyIndex = 0;
+  return keys[activeKeyIndex];
+}
+function rotateApiKey(){
+  const keys = getApiKeys();
+  if(activeKeyIndex < keys.length - 1){
+    activeKeyIndex++;
+    return true;
+  }
+  return false;
+}
+function toggleFormatLevel(idx,level,checked){
+  const f = state.formats[idx];
+  if(checked){ if(!f.choLevels.includes(level)) f.choLevels.push(level); }
+  else { f.choLevels = f.choLevels.filter(l=>l!==level); }
+  render();
+}
+function addFormat(){
+  state.formats.push({id:"f"+Date.now(), name:"Hình thức mới", dang:"khac", group:"TNKQ", kind:"cau", tongSoCau:4, tongDiem:1, soYMoiCau:1, choLevels:["NB","TH","VD"]});
+  render();
+}
+function removeFormat(idx){
+  if(!confirm("Xóa hình thức này? Các phân bổ liên quan sẽ mất.")) return;
+  const fid = state.formats[idx].id;
+  allUnits().forEach(({unit})=>LEVELS.forEach(l=>{ delete unit.levels[l].alloc[fid]; }));
+  state.formats.splice(idx,1); render();
+}
+
+/* ---------------- TAB 2: TOPICS & ALLOCATION ---------------- */
+function allocateInts(total, weights){
+  const sumW = weights.reduce((a,b)=>a+b,0);
+  if(sumW<=0 || total<=0) return weights.map(()=>0);
+  const raw = weights.map(w=> total*Math.max(0,w)/sumW);
+  const floors = raw.map(Math.floor);
+  let remainder = Math.round(total - floors.reduce((a,b)=>a+b,0));
+  const order = raw.map((r,i)=>({i,frac:r-Math.floor(r)})).sort((a,b)=>b.frac-a.frac);
+  const result = floors.slice();
+  for(let k=0;k<remainder && order.length>0;k++){ result[order[k%order.length].i]++; }
+  return result;
+}
+// Tính số câu mỗi (hình thức × mức độ) ở cấp TOÀN ĐỀ sao cho % điểm mỗi mức độ
+// (Biết/Hiểu/Vận dụng) khớp đúng tỉ lệ mục tiêu, có tính đến việc một số hình thức
+// (vd. Tự luận) không áp dụng cho mọi mức độ.
+function computeGlobalLevelCounts(){
+  let counts = {};
+  state.formats.forEach(f=>{
+    counts[f.id] = {NB:0,TH:0,VD:0};
+    const levels = f.choLevels;
+    if(levels.length===0) return;
+    const weights = levels.map(l=> +state.info['tyLe'+l] || 1);
+    const c = allocateInts(soDonVi(f), weights);
+    levels.forEach((l,idx)=>{ counts[f.id][l] = c[idx]; });
+  });
+
+  const total = tongDiemDe();
+  const target = {
+    NB: total*(+state.info.tyLeNB||0)/100,
+    TH: total*(+state.info.tyLeTH||0)/100,
+    VD: total*(+state.info.tyLeVD||0)/100
+  };
+  function globalLevel(l){
+    let s=0; state.formats.forEach(f=>{ s += (counts[f.id][l]||0)*diemDV(f); });
+    return s;
+  }
+
+  for(let iter=0; iter<3000; iter++){
+    const G = {NB:globalLevel('NB'), TH:globalLevel('TH'), VD:globalLevel('VD')};
+    const dev = {NB:G.NB-target.NB, TH:G.TH-target.TH, VD:G.VD-target.VD};
+    const sorted = LEVELS.slice().sort((a,b)=>dev[b]-dev[a]); // thừa nhiều -> thiếu nhiều
+    if(dev[sorted[0]] - dev[sorted[sorted.length-1]] <= 0.05) break; // đã đủ sát
+
+    let moved=false;
+    outer:
+    for(let i=0;i<sorted.length;i++){
+      for(let j=sorted.length-1;j>i;j--){
+        const lOver=sorted[i], lUnder=sorted[j];
+        if(dev[lOver]-dev[lUnder] <= 0.05) continue;
+        const candidates = state.formats
+          .filter(f=> f.choLevels.includes(lOver) && f.choLevels.includes(lUnder) && counts[f.id][lOver]>0)
+          .sort((x,y)=> diemDV(x)-diemDV(y)); // ưu tiên đơn vị nhỏ để tinh chỉnh mịn
+        if(candidates.length>0){
+          const f = candidates[0];
+          counts[f.id][lOver] -= 1;
+          counts[f.id][lUnder] += 1;
+          moved = true;
+          break outer;
+        }
+      }
+    }
+    if(!moved) break; // không còn cách chuyển khả thi (do giới hạn hình thức/mức độ)
+  }
+  return counts;
+}
+
+// Chia sẵn tổng số ý theo hàng (chủ đề) và cột (mức độ), giữ nguyên tổng mỗi hàng
+function transport(rows, cols){
+  const M=rows.map(r=>allocateInts(r, cols.slice()));
+  for(let it=0; it<500; it++){
+    const cs=cols.map((_,j)=>M.reduce((a,row)=>a+row[j],0)), dev=cs.map((v,j)=>v-cols[j]);
+    let over=-1, under=-1;
+    dev.forEach((d,j)=>{ if(d>0&&(over<0||d>dev[over])) over=j; if(d<0&&(under<0||d<dev[under])) under=j; });
+    if(over<0||under<0) break;
+    let bi=-1; M.forEach((row,i)=>{ if(row[over]>0&&(bi<0||row[over]>M[bi][over])) bi=i; });
+    if(bi<0) break;
+    M[bi][over]--; M[bi][under]++;
+  }
+  return M;
+}
+/* ---------------- PHÂN BỔ TRẢ LỜI NGẮN THEO KIỂU ĐÁP ÁN + PHÂN BỔ LẠI CÂU LỖI ---------------- */
+const TLN_NUM_CUES=['tính','xác định','đo ','đo,','phép đo','đếm','cân bằng','khối lượng','phân tử khối','hóa trị','số hiệu','số khối','vận tốc','tốc độ','quãng đường','nhiệt độ','áp suất','tần số','độ lớn','tỉ khối','bao nhiêu','số lượng'];
+const TLN_TXT_CUES=['nêu','nhận biết','gọi tên','kể tên','phát biểu','nhận dạng','liệt kê','phân biệt','mô tả','trình bày','cho biết tên','tên '];
+// Độ hợp (0,5 / 1 / 3) giữa yêu cầu cần đạt của một bài-mức và kiểu đáp án của câu Trả lời ngắn
+function tlnFit(u,l,kieu){
+  if(kieu==='ca_hai') return 1;
+  const t=yccdLines(u,l).join(' ').toLowerCase();
+  const num=TLN_NUM_CUES.some(c=>t.includes(c)), txt=TLN_TXT_CUES.some(c=>t.includes(c));
+  if(kieu==='so') return num?2:(txt?0.6:1);
+  return (txt&&!num)?2:(num&&!txt?0.6:1);
+}
+// Câu AI không soạn ra được (AI hỏi lại / thiếu thông tin) - không tính câu thiếu yêu cầu cần đạt (phải nhập yêu cầu, dời chỗ không giúp được)
+function failedSlots(){
+  return buildSlots().filter(sl=>{ const q=state.questions[sl.key]; return q && !q.noidung && q.canhoi && !missingYccd(sl).length; });
+}
+function reallocBtn(){
+  const n=failedSlots().length;
+  return `<button class="no-print" ${n?'':'disabled'} onclick="reallocFailed()" title="Chuyển các câu AI không soạn được sang bài khác cùng mức độ, cùng hình thức (tổng số câu và tỉ lệ Biết/Hiểu/Vận dụng giữ nguyên)">🔁 Phân bổ lại các câu lỗi${n?' ('+n+')':''}</button>`;
+}
+function reallocFailed(){
+  if(typeof aiGenerating!=='undefined' && aiGenerating){ toast('Đang soạn câu, vui lòng chờ...'); return; }
+  const failed=failedSlots();
+  if(!failed.length){ toast('Không có câu nào bị lỗi cần phân bổ lại.'); return; }
+  state.badBuckets=state.badBuckets||{}; state.reallocRounds=+state.reallocRounds||0;
+  if(state.reallocRounds>=3 && !confirm('Đã phân bổ lại '+state.reallocRounds+' lần mà vẫn còn câu lỗi.\nThường là do yêu cầu cần đạt mơ hồ hoặc chưa nạp nội dung SGK của bài đó.\nVẫn phân bổ lại thêm một lần nữa?')) return;
+  const slots0=buildSlots();
+  // ghi nhớ: câu nào đang khớp yêu cầu cần đạt (để dời chỗ xong không bị báo "yêu cầu đã đổi" oan); gỡ các câu Đúng–Sai ra để ghép lại theo chữ ký
+  const oldDs=[];
+  slots0.forEach(sl=>{
+    const q=state.questions[sl.key];
+    if(q && q.noidung) q._ysOk=(q.ysig===undefined || q.ysig===yccdSigOf(sl));
+    if(sl.format.kind==='dung_sai'){ if(q && q.noidung && q.sig) oldDs.push({q,sig:q.sig}); delete state.questions[sl.key]; }
+  });
+  const bk=(u,l,f)=>u.id+'|'+l+'|'+f.id;
+  const cntU=u=>LEVELS.reduce((a,l)=>a+state.formats.reduce((b,f)=>b+(u.levels[l].alloc[f.id]||0),0),0);
+  const flat=allUnits().filter(x=>!x.unit.khongKT);
+  const pickDest=(f,l,src,srcTopic)=>{
+    let best=null, bs=-Infinity;
+    flat.forEach(({topic,unit})=>{
+      if(unit===src || !hasYccd(unit,l) || !f.choLevels.includes(l)) return;
+      if(state.badBuckets[bk(unit,l,f)]) return;
+      let sc=(topic===srcTopic?1000:0) - (unit.levels[l].alloc[f.id]||0)*3 - cntU(unit);
+      if(cntU(unit)===0) sc+=50;
+      if(f.dang==='tra_loi_ngan') sc+=tlnFit(unit,l,kieuOf(f))*10;
+      if(sc>bs){ bs=sc; best=unit; }
+    });
+    return best;
+  };
+  let moved=0, stuck=0, sameTopic=0;
+  const addTo=(dst,l,f,withKey)=>{
+    const da=dst.levels[l].alloc, m=da[f.id]||0;
+    if(withKey) delete state.questions[`${dst.id}|${l}|${f.id}|${m}`];
+    da[f.id]=m+1;
+  };
+  // câu thường: xử lý từ chỉ số lớn về nhỏ trong cùng một ô để chỉ số không bị lệch
+  const normal=failed.filter(sl=>sl.format.kind!=='dung_sai').sort((a,b)=>b.items[0].k-a.items[0].k);
+  normal.forEach(sl=>{
+    const it=sl.items[0], f=sl.format, l=it.level, src=it.unit;
+    state.badBuckets[bk(src,l,f)]=(state.badBuckets[bk(src,l,f)]||0)+1;
+    const dst=pickDest(f,l,src,it.topic);
+    if(!dst){ stuck++; return; }
+    const al=src.levels[l].alloc, n=al[f.id]||0, K=j=>`${src.id}|${l}|${f.id}|${j}`;
+    delete state.questions[K(it.k)];
+    for(let j=it.k+1;j<n;j++){ if(state.questions[K(j)]) state.questions[K(j-1)]=state.questions[K(j)]; delete state.questions[K(j)]; }
+    if(n-1>0) al[f.id]=n-1; else delete al[f.id];
+    addTo(dst,l,f,true); moved++;
+    if(state.topics.some(t=>t.units.includes(dst)&&t===it.topic)) sameTopic++;
+  });
+  // câu Đúng–Sai: dời từng ý của câu lỗi
+  failed.filter(sl=>sl.format.kind==='dung_sai').forEach(sl=>{
+    const counted=new Set();
+    sl.items.forEach(it=>{
+      const f=sl.format, l=it.level, src=it.unit;
+      if(!counted.has(bk(src,l,f))){ counted.add(bk(src,l,f)); state.badBuckets[bk(src,l,f)]=(state.badBuckets[bk(src,l,f)]||0)+1; }
+      const dst=pickDest(f,l,src,it.topic);
+      if(!dst){ stuck++; return; }
+      const al=src.levels[l].alloc, n=al[f.id]||0;
+      if(n-1>0) al[f.id]=n-1; else delete al[f.id];
+      addTo(dst,l,f,false); moved++;
+      if(it.topic.units.includes(dst)) sameTopic++;
+    });
+  });
+  // ghép lại câu Đúng–Sai đã soạn tốt theo chữ ký (bài + mức của từng ý)
+  const ns=buildSlots(), used=new Set();
+  ns.forEach(sl=>{
+    if(sl.format.kind!=='dung_sai') return;
+    const sg=slotSig(sl), i=oldDs.findIndex((o,ix)=>!used.has(ix) && o.sig===sg);
+    if(i>=0){ used.add(i); state.questions[sl.key]=oldDs[i].q; }
+  });
+  const dsLost=oldDs.length-used.size;
+  ns.forEach(sl=>{ const q=state.questions[sl.key]; if(q){ if(q._ysOk) q.ysig=yccdSigOf(sl); delete q._ysOk; } });
+  state.reallocRounds++;
+  // bài bị lỗi nhiều lần -> nhắc kiểm tra gốc
+  const worst=[]; allUnits().forEach(({unit})=>{ let c=0; Object.keys(state.badBuckets).forEach(k=>{ if(k.startsWith(unit.id+'|')) c+=state.badBuckets[k]; }); if(c>=2) worst.push(unit.name); });
+  render();
+  toast(`🔁 Đã chuyển ${moved} câu/ý sang bài khác (cùng mức độ, cùng hình thức; tổng số câu và tỉ lệ mức độ không đổi).`
+    +(moved&&sameTopic<moved?` ${moved-sameTopic} câu/ý phải sang chủ đề khác nên điểm chủ đề có thể lệch.`:'')
+    +(stuck?` ${stuck} câu/ý chưa có chỗ phù hợp để chuyển.`:'')
+    +(dsLost>0?` ${dsLost} câu Đúng–Sai đã soạn bị đổi cụm ý nên cần soạn lại.`:'')
+    +(worst.length?` Bài lỗi nhiều lần, nên xem lại yêu cầu cần đạt/SGK: ${worst.join('; ')}.`:'')
+    +' Bấm 🤖 AI soạn các câu còn trống để soạn các câu vừa chuyển.');
+}
+function autoAllocate(){
+  if(!state.topics.length || state.topics.some(t=>!t.units.length)){ toast("Mỗi chủ đề cần ít nhất 1 bài."); return; }
+  const hasAny=allUnits().some(({unit})=>!unit.khongKT && LEVELS.some(l=>hasYccd(unit,l)));
+  if(!hasAny){ toast("Chưa có yêu cầu cần đạt nào. Hãy nhập yêu cầu cần đạt cho các bài trước, rồi mới phân bổ số câu."); return; }
+  state.badBuckets={}; state.reallocRounds=0;
+  const eligT=(ti,l)=>state.topics[ti].units.some(u=>!u.khongKT && hasYccd(u,l));
+  const tW=state.topics.map(t=>testUnits(t).length ? (tietTopic(t)||0.001) : 0), gc=computeGlobalLevelCounts();
+  const A=state.topics.map(()=>({NB:{},TH:{},VD:{}}));
+  state.formats.forEach(f=>{
+    if(f.kind==='dung_sai'){
+      // mỗi câu Đúng–Sai thuộc 1 chủ đề: chia số câu theo tiết, rồi chia ý theo mức độ
+      const per=+f.soYMoiCau||1, rows=allocateInts(+f.tongSoCau||0,tW).map(c=>c*per);
+      transport(rows, LEVELS.map(l=>gc[f.id][l]||0)).forEach((row,ti)=>LEVELS.forEach((l,li)=>{ A[ti][l][f.id]=row[li]; }));
+    } else {
+      const isTln=f.dang==='tra_loi_ngan', kieu=kieuOf(f);
+      f.choLevels.forEach(l=>{
+        const w=tW.map((x,ti)=>{
+          if(!eligT(ti,l)) return 0;
+          if(!isTln) return x;
+          // Trả lời ngắn: nhân trọng số theo độ hợp giữa yêu cầu cần đạt và kiểu đáp án (Điền số / Điền chữ)
+          const us=state.topics[ti].units.filter(u=>!u.khongKT && hasYccd(u,l));
+          const tot=us.reduce((a,u)=>a+(+u.tietHoc||0.001),0)||1;
+          return x*us.reduce((a,u)=>a+(+u.tietHoc||0.001)*tlnFit(u,l,kieu),0)/tot;
+        });
+        allocateInts(gc[f.id][l]||0, w.some(x=>x>0)?w:tW).forEach((n,ti)=>{ A[ti][l][f.id]=n; });
+      });
+    }
+  });
+  const total=tongDiemDe(), tong=tongTietHoc(), TOL=0.25;
+  const targets=state.topics.map(t=>tong? total*tietTopic(t)/tong : 0);
+  const dT=ti=>{ let x=0; LEVELS.forEach(l=>state.formats.forEach(f=>{ x+=(A[ti][l][f.id]||0)*diemDV(f); })); return x; };
+  const tFit=(ti,l,f)=>{ if(f.dang!=='tra_loi_ngan') return 1; let m=0; state.topics[ti].units.forEach(u=>{ if(!u.khongKT && hasYccd(u,l)) m=Math.max(m,tlnFit(u,l,kieuOf(f))); }); return m; };
+  const move=(a,b)=>{
+    let best=null, bv=Infinity, bl=Infinity;
+    state.formats.forEach(f=>{ if(f.kind==='dung_sai') return; f.choLevels.forEach(l=>{
+      if(!((A[a][l][f.id]||0)>0)) return;
+      const loss=Math.max(0, tFit(a,l,f)-tFit(b,l,f)), dv=diemDV(f);
+      if(loss<bl || (loss===bl && dv<bv)){ bl=loss; bv=dv; best={f,l}; }
+    }); });
+    if(!best) return false;
+    A[a][best.l][best.f.id]--; A[b][best.l][best.f.id]=(A[b][best.l][best.f.id]||0)+1; return true;
+  };
+  for(let it=0; it<800; it++){
+    const devs=state.topics.map((t,i)=>dT(i)-targets[i]); let mx=0, mi=-1;
+    devs.forEach((d,i)=>{ if(Math.abs(d)>Math.abs(mx)){ mx=d; mi=i; } });
+    if(Math.abs(mx)<=TOL) break;
+    let ok;
+    if(mx>0){ const to=devs.indexOf(Math.min(...devs)); ok=(to!==mi)&&move(mi,to); }
+    else { const fr=devs.indexOf(Math.max(...devs)); ok=(fr!==mi)&&move(fr,mi); }
+    if(!ok) break;
+  }
+  // Sửa lại: câu nào rơi vào chủ đề/mức chưa có yêu cầu cần đạt thì chuyển sang chỗ có; nếu không còn chỗ nào thì bỏ
+  let chuyen=0, bo=0;
+  state.topics.forEach((t,ti)=>LEVELS.forEach(l=>{
+    if(eligT(ti,l)) return;
+    state.formats.forEach(f=>{
+      let n=A[ti][l][f.id]||0; if(!n) return; A[ti][l][f.id]=0;
+      while(n-->0){
+        let dest=null;
+        const sameLv=state.topics.map((_,tj)=>tj).filter(tj=>tj!==ti && eligT(tj,l) && f.choLevels.includes(l));
+        if(sameLv.length){ dest=[sameLv.sort((a,b)=>(targets[b]-dT(b))-(targets[a]-dT(a)))[0], l]; }
+        else {
+          const lv2=f.choLevels.filter(x=>x!==l && eligT(ti,x));
+          if(lv2.length) dest=[ti,lv2[0]];
+          else { for(const tj of state.topics.map((_,k)=>k)) { const x=f.choLevels.find(L=>eligT(tj,L)); if(x){ dest=[tj,x]; break; } } }
+        }
+        if(dest){ A[dest[0]][dest[1]][f.id]=(A[dest[0]][dest[1]][f.id]||0)+1; chuyen++; } else bo++;
+      }
+    });
+  }));
+  const bad=state.topics.some((t,i)=>Math.abs(dT(i)-targets[i])>TOL);
+  // chia tiếp từ chủ đề xuống từng bài theo số tiết
+  state.topics.forEach((t,ti)=>{
+    t.units.forEach(u=>LEVELS.forEach(l=>{ u.levels[l].alloc={}; }));
+    state.formats.forEach(f=>LEVELS.forEach(l=>{
+      const n=A[ti][l][f.id]||0; if(!n) return;
+      const uW=t.units.map(u=>(u.khongKT||!hasYccd(u,l)) ? 0 : (+u.tietHoc||0.001)*(f.dang==='tra_loi_ngan'?tlnFit(u,l,kieuOf(f)):1));
+      allocateInts(n,uW).forEach((c,ui)=>{ if(c) t.units[ui].levels[l].alloc[f.id]=c; });
+    }));
+  });
+  // Đảm bảo mỗi bài có ít nhất 1 câu (nếu tổng số câu đủ). Lấy 1 câu từ bài đang có nhiều câu, cùng hình thức và cùng mức độ nên tổng toàn đề và tỉ lệ mức độ không đổi. Ưu tiên lấy trong cùng chủ đề.
+  const cntU=u=>LEVELS.reduce((a,l)=>a+state.formats.reduce((b,f)=>b+(u.levels[l].alloc[f.id]||0),0),0);
+  const flat=allUnits().filter(x=>!x.unit.khongKT), devT=t=>diemDaPhanBoTopic(t)-targets[state.topics.indexOf(t)];
+  flat.filter(x=>cntU(x.unit)===0).sort((a,b)=>(+b.unit.tietHoc||0)-(+a.unit.tietHoc||0)).forEach(E=>{
+    const lvs=LEVELS.filter(l=>hasYccd(E.unit,l));
+    // lượt 0: chỉ lấy trong cùng chủ đề (không đổi điểm chủ đề); lượt 1: lấy từ chủ đề đang dư điểm nhất
+    for(const pass of [0,1]) for(const l of lvs) for(const f of state.formats){
+      if(f.kind==='dung_sai' || !f.choLevels.includes(l)) continue;
+      const donors=flat.filter(d=>d.unit!==E.unit && cntU(d.unit)>1 && (d.unit.levels[l].alloc[f.id]||0)>0 && (pass===1 || d.topic===E.topic))
+        .sort((a,b)=> pass===0 ? cntU(b.unit)-cntU(a.unit) : (devT(b.topic)-devT(a.topic)) || (cntU(b.unit)-cntU(a.unit)));
+      if(donors.length){ donors[0].unit.levels[l].alloc[f.id]--; E.unit.levels[l].alloc[f.id]=1; return; }
+    }
+  });
+  const thieu=flat.filter(x=>cntU(x.unit)===0).length, bad2=state.topics.some(t=>Math.abs(devT(t))>TOL);
+  render();
+  const chuY=allUnits().filter(({unit})=>!unit.khongKT && !LEVELS.some(l=>hasYccd(unit,l))).length;
+  toast((chuyen||bo||chuY ? `Chỉ phân bổ vào các mục có yêu cầu cần đạt.${chuyen?' '+chuyen+' câu/ý được chuyển sang mục có yêu cầu.':''}${bo?' '+bo+' câu/ý không đặt được vì thiếu yêu cầu cần đạt (đề đang thiếu '+bo+').':''}${chuY?' '+chuY+' bài chưa có yêu cầu cần đạt nên không có câu.':''} ` : '') + (bad2 ? "Đã phân bổ, nhưng có chủ đề lệch hơn 0,25đ so với số tiết. Thầy xem bảng bên dưới và chỉnh tay." : "Đã tự động phân bổ, mọi chủ đề lệch không quá 0,25đ so với số tiết.")
+    + (thieu ? ` Còn ${thieu} bài chưa có câu vì đề không đủ số câu để phủ hết các bài.` : ""));
+}
+function insertVerb(ti, ui, level, verb){
+  const lv=state.topics[ti].units[ui].levels[level], cur=lv.yccd;
+  lv.yccd = cur + (cur && !cur.trim().endsWith('\n') ? '\n' : '') + '- ' + verb + ' ...';
+  render();
+}
+/* ---------------- NẠP SGK TỪ FILE .md / .txt ---------------- */
+const SGK_CAP = 15000; // số ký tự SGK của mỗi bài được gửi cho AI
+function sgkStatus(u){
+  const n=(u.sgk||'').trim().length;
+  if(!n) return ' ⚠ chưa nhập';
+  return ' ✓ ('+n.toLocaleString('vi-VN')+' ký tự'+(n>SGK_EXCERPT_CAP?', AI chỉ nhận các đoạn liên quan nhất với yêu cầu cần đạt':'')+')';
+}
+function sgkNorm(s){
+  return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d')
+    .replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();
+}
+function sgkBaiNo(norm){ const m=norm.match(/\bbai (\d+)\b/); return m?+m[1]:null; }
+function sgkTitleOnly(norm){ return norm.replace(/^(bai \d+ ?)/,'').trim(); }
+// Cắt file thành các mục: mỗi dòng "# Bài N..." hoặc "## Bài N..." mở một mục mới.
+// Dòng "# Chương..."/"# Chủ đề..." chỉ để kết thúc mục trước. Các tiêu đề ### trở xuống là nội dung của bài.
+function parseSgkFile(text){
+  text=(text||'').replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n');
+  const secs=[]; let cur=null;
+  text.split('\n').forEach(line=>{
+    const m=line.match(/^#{1,2}\s+(.+?)\s*#*\s*$/);
+    if(m){
+      const title=m[1].replace(/[*_`]/g,'').trim(), norm=sgkNorm(title);
+      if(/^bai \d+\b/.test(norm)){ cur={title, norm, num:sgkBaiNo(norm), lines:[]}; secs.push(cur); return; }
+      if(/^(chuong|chu de|phan)\b/.test(norm)){ cur=null; return; }
+    }
+    if(cur) cur.lines.push(line);
+  });
+  secs.forEach(s=>{ s.body=s.lines.join('\n').replace(/\n{3,}/g,'\n\n').trim(); delete s.lines; });
+  return secs;
+}
+function matchSgkSection(sec){
+  const all=allUnits().map(x=>({unit:x.unit, norm:sgkNorm(x.unit.name)}));
+  const sTitle=sgkTitleOnly(sec.norm);
+  const byNum = sec.num==null ? [] : all.filter(x=>sgkBaiNo(x.norm)===sec.num);
+  const nameOk = x=>{ const u=sgkTitleOnly(x.norm); return u.length>=4 && sTitle.length>=4 && (u===sTitle || u.includes(sTitle) || sTitle.includes(u)); };
+  const both = byNum.filter(nameOk);
+  if(both.length===1) return both[0].unit;
+  if(byNum.length===1) return byNum[0].unit;
+  const byName = all.filter(nameOk);
+  if(byName.length===1) return byName[0].unit;
+  return null;
+}
+function applySgkText(text){
+  const secs=parseSgkFile(text);
+  if(!secs.length){ alert('Không tìm thấy mục nào bắt đầu bằng dòng dạng "## Bài 8. Tên bài" trong file này.'); return; }
+  const got=new Map(), unmatched=[], empty=[];
+  secs.forEach(s=>{
+    if(!s.body){ empty.push(s.title); return; }
+    const u=matchSgkSection(s);
+    if(!u){ unmatched.push(s.title); return; }
+    got.set(u, (got.has(u)?got.get(u)+'\n\n':'')+s.body);
+  });
+  if(!got.size){ alert('Đọc được '+secs.length+' mục bài trong file nhưng không mục nào khớp với tên bài trong đề.\nHãy đặt tên bài trong đề giống tiêu đề trong file (số bài hoặc tên bài).\n\nVí dụ mục trong file: '+secs[0].title); return; }
+  let ghiDe=0; got.forEach((v,u)=>{ if((u.sgk||'').trim()) ghiDe++; });
+  const thieu=allUnits().filter(({unit})=>!unit.khongKT && !got.has(unit) && !(unit.sgk||'').trim()).map(x=>x.unit.name);
+  let msg='Đọc được '+secs.length+' mục bài trong file.\n✔ Khớp và sẽ điền vào '+got.size+' bài trong đề.';
+  if(ghiDe) msg+='\n⚠ '+ghiDe+' bài đã có nội dung SGK sẽ bị thay bằng nội dung từ file.';
+  if(unmatched.length) msg+='\n✘ Không khớp bài nào trong đề ('+unmatched.length+'): '+unmatched.slice(0,6).join('; ')+(unmatched.length>6?'...':'');
+  if(empty.length) msg+='\n✘ Mục trống, bỏ qua ('+empty.length+'): '+empty.slice(0,4).join('; ')+(empty.length>4?'...':'');
+  if(thieu.length) msg+='\nBài trong đề vẫn chưa có SGK ('+thieu.length+'): '+thieu.slice(0,6).join('; ')+(thieu.length>6?'...':'');
+  msg+='\n\nTiếp tục nạp?';
+  if(!confirm(msg)) return;
+  got.forEach((v,u)=>{ u.sgk=v; });
+  render();
+  toast('Đã nạp SGK cho '+got.size+' bài. Nhớ bấm lưu đề nếu muốn giữ lại.');
+}
+function nhapSGKFile(){
+  const inp=document.createElement('input');
+  inp.type='file'; inp.accept='.md,.markdown,.txt,text/plain,text/markdown';
+  inp.onchange=async()=>{
+    const f=inp.files&&inp.files[0]; if(!f) return;
+    try{ applySgkText(await f.text()); }catch(e){ alert('Không đọc được file: '+e.message); }
+  };
+  inp.click();
+}
+
+function viewTopics(){
+  const tong=tongTietHoc(), total=tongDiemDe();
+  let h=`<div class="card"><h2>Chủ đề, bài và phân bổ số câu</h2>
+  <p class="muted" style="margin-bottom:10px;">Mỗi chủ đề gồm nhiều bài (đơn vị kiến thức). Nhập số tiết và yêu cầu cần đạt cho từng bài, rồi bấm tự động phân bổ. Với câu Đúng – Sai, ô phân bổ tính theo <b>ý</b> (mỗi ý có mức độ riêng).</p>
+  <div class="flex"><button class="primary" onclick="autoAllocate()">⚡ Tự động phân bổ</button>${reallocBtn()}<button onclick="addTopic()">+ Thêm chủ đề</button><button onclick="nhapSGKFile()" title="Chọn 1 file .md hoặc .txt chứa SGK, mỗi bài mở đầu bằng dòng ## Bài N. Tên bài">📥 Nạp SGK từ file (.md / .txt)</button><button onclick="clearAllocNoYccd()">🧹 Gỡ phân bổ ở mục thiếu yêu cầu cần đạt</button></div>
+  <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:.8rem;color:var(--muted);"><input type="checkbox" style="width:auto" ${state.info.hienThucHanh===false?'':'checked'} onchange="state.info.hienThucHanh=this.checked;render()"> Hiện tên các bài không chia câu (bài thực hành) trong ma trận và bản đặc tả</label></div>`;
+  state.topics.forEach((t,ti)=>{
+    const pct=tong?fmt(tietTopic(t)/tong*100):0, goiY=total?fmt(total*pct/100):0, da=fmt(diemDaPhanBoTopic(t)), lech=fmt(da-goiY), ok=Math.abs(lech)<=0.25;
+    h+=`<div class="card"><div class="topic-head"><input type="text" value="${esc(t.name)}" onchange="state.topics[${ti}].name=this.value;render()" style="flex:2">
+      <button class="small" onclick="addUnit(${ti})">+ Thêm bài</button><button class="small danger" onclick="removeTopic(${ti})">Xóa chủ đề</button></div>
+      <div class="flex between" style="margin-bottom:10px;font-size:.74rem;"><span class="muted">Số tiết: <b>${fmt(tietTopic(t))}</b> (${pct}%) · Gợi ý: <b>${goiY}đ</b> · Đã phân bổ: <b>${da}đ</b></span>
+      <span class="pill ${ok?'ok':'bad'}">${ok?'Phù hợp số tiết':'Lệch '+(lech>0?'+':'')+lech+'đ'}</span></div>`;
+    t.units.forEach((u,ui)=>{
+      h+=`<div class="topic-block"><div class="topic-head"><input type="text" value="${esc(u.name)}" placeholder="Tên bài / đơn vị kiến thức" oninput="state.topics[${ti}].units[${ui}].name=this.value">
+        <label style="display:flex;align-items:center;gap:6px;font-size:.74rem;color:var(--muted);white-space:nowrap;">Số tiết <input type="number" min="0" step="0.5" value="${u.tietHoc}" style="width:60px" onchange="state.topics[${ti}].units[${ui}].tietHoc=+this.value;render()"></label>
+        ${u.khongKT?'<span class="pill" style="white-space:nowrap;">Không chia câu</span>':LEVELS.reduce((x,l)=>x+state.formats.reduce((y,f)=>y+(u.levels[l].alloc[f.id]||0),0),0)?'':'<span class="pill bad" style="white-space:nowrap;">Chưa có câu</span>'}
+        <label style="display:flex;align-items:center;gap:6px;font-size:.74rem;color:var(--muted);white-space:nowrap;"><input type="checkbox" style="width:auto" ${u.khongKT?'checked':''} onchange="toggleKhongKT(${ti},${ui},this.checked)"> Không chia câu cho bài này (bài thực hành)</label>
+        <button class="small danger" onclick="removeUnit(${ti},${ui})">Xóa bài</button></div>`;
+      if(u.khongKT){ h+=`<p class="muted" style="font-size:.78rem;">Bài này không được chia câu. ${state.info.hienThucHanh===false?'Bài không xuất hiện trong ma trận và bản đặc tả (đang tắt ô "Hiển thị bài thực hành" ở đầu trang).':'Tên bài vẫn hiện trong ma trận và bản đặc tả, các ô số câu để trống.'} Số tiết của bài vẫn được tính vào phần điểm của chủ đề.</p></div>`; return; }
+      h+=`<details class="sgk-box" ${((u.sgk||'').trim()||(u.ngoai||'').trim())?'open':''} style="margin:6px 0;"><summary style="cursor:pointer;font-size:.8rem;color:var(--accent2);">📖 Nội dung sách giáo khoa của bài (để AI ra đề đúng sách)${sgkStatus(u)}</summary>
+        <textarea rows="6" placeholder="Dán tóm tắt hoặc trích đoạn SGK của bài: khái niệm, định nghĩa, công thức, phương trình, số liệu, tên thí nghiệm... Càng đúng nguyên văn SGK càng tốt." oninput="state.topics[${ti}].units[${ui}].sgk=this.value">${esc(u.sgk||'')}</textarea>
+        <input type="text" style="margin-top:4px" placeholder="Từ ngữ/nội dung NGOÀI chương trình, cấm dùng (cách nhau bằng dấu chấm phẩy). Ví dụ: vận tốc; nhanh dần đều" value="${esc(u.ngoai||'')}" oninput="state.topics[${ti}].units[${ui}].ngoai=this.value"></details>`;
+      LEVELS.forEach(l=>{
+        h+=`<div class="level-row"><div class="level-tag tag-${l}">${LEVEL_LABEL[l]}</div><div>
+          <div class="alloc-row" style="margin-bottom:4px;">${LEVEL_VERBS[l].map(v=>`<button class="small" style="font-size:.68rem;padding:3px 7px;" onclick="insertVerb(${ti},${ui},'${l}','${v}')">+ ${v}</button>`).join('')}</div>
+          <textarea placeholder="Yêu cầu cần đạt (${LEVEL_LABEL[l]})..." oninput="onYccdInput(${ti},${ui},'${l}',this)">${esc(u.levels[l].yccd)}</textarea>
+          <div class="yccd-need" style="font-size:.7rem;color:var(--accent2);margin:2px 0;${hasYccd(u,l)?'display:none;':''}">⚠ Chưa có yêu cầu cần đạt, chưa được phân bổ câu cho mức này.</div>
+          <div class="alloc-row">${state.formats.map(f=>`<div class="alloc-cell"><span>${esc(f.name)}${f.kind==='dung_sai'?' (ý)':''}</span><input type="number" min="0" value="${u.levels[l].alloc[f.id]||0}" ${f.choLevels.includes(l)?'data-lv="1"':''} ${(f.choLevels.includes(l)&&hasYccd(u,l))?'':'disabled'} onchange="setAlloc(${ti},${ui},'${l}','${f.id}',this.value)"></div>`).join('')}</div></div></div>`;
+      });
+      h+=`</div>`;
+    });
+    h+=`</div>`;
+  });
+  h+=`<div class="card"><h2>Phân bổ điểm theo số tiết</h2><table><thead><tr><th>Chủ đề</th><th>Số tiết</th><th>Tỉ lệ %</th><th>Gợi ý điểm</th><th>Đã phân bổ</th><th>Trạng thái</th></tr></thead><tbody>`;
+  state.topics.forEach(t=>{
+    const pct=tong?fmt(tietTopic(t)/tong*100):0, goiY=total?fmt(total*pct/100):0, da=fmt(diemDaPhanBoTopic(t)), lech=fmt(da-goiY), ok=Math.abs(lech)<=0.25;
+    h+=`<tr><td class="left">${esc(t.name)}</td><td>${fmt(tietTopic(t))}</td><td>${pct}%</td><td>${goiY}đ</td><td>${da}đ</td><td><span class="pill ${ok?'ok':'bad'}">${ok?'Phù hợp':'Lệch '+(lech>0?'+':'')+lech+'đ'}</span></td></tr>`;
+  });
+  h+=`<tr style="font-weight:700;background:var(--panel2);"><td class="left">Tổng</td><td>${fmt(tong)}</td><td>100%</td><td>${total}đ</td><td>${fmt(state.topics.reduce((a,t)=>a+diemDaPhanBoTopic(t),0))}đ</td><td></td></tr></tbody></table></div>`;
+  h+=`<div class="card"><h2>Kiểm tra tổng số câu & tỉ lệ mức độ</h2><table><thead><tr><th>Hình thức</th><th>Mục tiêu</th><th>Đã phân bổ</th><th>Trạng thái</th></tr></thead><tbody>`;
+  state.formats.forEach(f=>{
+    const da=sumAllocForFormat(f.id), mt=soDonVi(f), ok=da===mt, dv=f.kind==='dung_sai'?' ý':' câu';
+    h+=`<tr><td class="left">${esc(f.name)}</td><td>${mt}${dv}</td><td>${da}${dv}</td><td><span class="pill ${ok?'ok':'bad'}">${ok?'Khớp':'Lệch '+(da-mt)}</span></td></tr>`;
+  });
+  h+=`</tbody></table>`;
+  const dNB=fmt(sumDiemForLevel('NB')), dTH=fmt(sumDiemForLevel('TH')), dVD=fmt(sumDiemForLevel('VD'));
+  const pc=d=>total?fmt(d/total*100):0;
+  h+=`<table style="margin-top:10px;"><thead><tr><th>Mức độ</th><th>Điểm</th><th>% thực tế</th><th>% mục tiêu</th><th>Trạng thái</th></tr></thead><tbody>
+    ${rowCheck('Biết',dNB,pc(dNB),state.info.tyLeNB)}${rowCheck('Hiểu',dTH,pc(dTH),state.info.tyLeTH)}${rowCheck('Vận dụng',dVD,pc(dVD),state.info.tyLeVD)}</tbody></table></div>`;
+  return h;
+}
+function rowCheck(label,diem,pct,target){
+  const ok=Math.abs(pct-target)<=2;
+  return `<tr><td class="left">${label}</td><td>${diem}</td><td>${pct}%</td><td>${target}%</td><td><span class="pill ${ok?'ok':'bad'}">${ok?'Đạt':'Chưa khớp'}</span></td></tr>`;
+}
+function setAlloc(ti,ui,level,fid,val){
+  const u=state.topics[ti].units[ui], n=Math.max(0,parseInt(val)||0);
+  if(n>0 && !hasYccd(u,level)){ toast('Chưa có yêu cầu cần đạt mức '+LEVEL_LABEL[level]+' của bài này nên không được phân bổ câu. Hãy nhập yêu cầu cần đạt trước.'); u.levels[level].alloc[fid]=0; render(); return; }
+  u.levels[level].alloc[fid]=n; render();
+}
+// Gõ yêu cầu cần đạt: mở/khóa ngay các ô phân bổ của mức đó (không vẽ lại để khỏi mất con trỏ)
+function onYccdInput(ti,ui,l,el){
+  const u=state.topics[ti].units[ui]; u.levels[l].yccd=el.value;
+  const ok=hasYccd(u,l), row=el.closest('.level-row');
+  if(row) row.querySelectorAll('.alloc-cell input').forEach(i=>{ if(i.dataset.lv==='1') i.disabled=!ok; });
+  const w=row&&row.querySelector('.yccd-need'); if(w) w.style.display=ok?'none':'';
+}
+// Gỡ các phân bổ đang nằm ở mục chưa có yêu cầu cần đạt
+function clearAllocNoYccd(){
+  let n=0; allUnits().forEach(({unit})=>LEVELS.forEach(l=>{ if(!hasYccd(unit,l)) Object.keys(unit.levels[l].alloc).forEach(fid=>{ n+=unit.levels[l].alloc[fid]||0; }); }));
+  if(!n){ toast('Không có phân bổ nào nằm ở mục thiếu yêu cầu cần đạt.'); return; }
+  if(!confirm('Gỡ '+n+' câu/ý đang phân bổ ở các mục chưa có yêu cầu cần đạt?\n(Sau khi nhập yêu cầu cần đạt, bấm Tự động phân bổ lại.)')) return;
+  allUnits().forEach(({unit})=>LEVELS.forEach(l=>{ if(!hasYccd(unit,l)) unit.levels[l].alloc={}; }));
+  render(); toast('Đã gỡ '+n+' câu/ý. Thầy nhập yêu cầu cần đạt rồi phân bổ lại.');
+}
+function addTopic(){ state.topics.push({id:uid('t'), name:"Chủ đề mới", units:[newUnit("Bài mới",1)]}); render(); }
+function removeTopic(ti){ if(!confirm("Xóa chủ đề này cùng các bài của nó?")) return; state.topics.splice(ti,1); render(); }
+function addUnit(ti){ state.topics[ti].units.push(newUnit("Bài mới",1)); render(); }
+function removeUnit(ti,ui){ if(!confirm("Xóa bài này?")) return; state.topics[ti].units.splice(ui,1); render(); }
+
+/* ---------------- DÙNG CHUNG: THỨ TỰ HÌNH THỨC, ĐÁNH SỐ CÂU, ĐỊNH DẠNG SỐ ---------------- */
+function vnPlain(n){ return String(Math.round(n*100)/100).replace('.',','); }
+function vn(n){ const r=Math.round(n*100)/100; return String(r).replace('.',',') + (Number.isInteger(r)?',0':''); }
+function pctStr(n){ return String(Math.round(n*10)/10).replace('.',','); }
+function orderedFormats(){ return [...state.formats.filter(f=>f.group==='TNKQ'), ...state.formats.filter(f=>f.group!=='TNKQ')]; }
+function groupsOf(){
+  const o=orderedFormats();
+  return [{label:'TNKQ',formats:o.filter(f=>f.group==='TNKQ')},{label:'Tự luận',formats:o.filter(f=>f.group!=='TNKQ')}].filter(g=>g.formats.length);
+}
+// Danh sách "ô câu hỏi" theo đúng thứ tự trong đề, đánh số liên tục. Câu Đúng–Sai gồm nhiều ý (mỗi ý có bài + mức độ riêng).
+function buildSlots(){
+  const slots=[], ulc={}; let num=1;
+  orderedFormats().forEach(f=>{
+    const items=[];
+    allUnits().forEach(({topic,unit})=>LEVELS.forEach(l=>{
+      const n=unit.levels[l].alloc[f.id]||0;
+      for(let k=0;k<n;k++){ const kk=unit.id+'|'+l, c=ulc[kk]||0; ulc[kk]=c+1; items.push({topic,unit,level:l,k,ul:c}); }
+    }));
+    if(f.kind==='dung_sai'){
+      const per=+f.soYMoiCau||1;
+      for(let c=0;c*per<items.length;c++) slots.push({key:`${f.id}|ds|${c}`, format:f, num:num++, items:items.slice(c*per,(c+1)*per)});
+    } else {
+      items.forEach(it=>slots.push({key:`${it.unit.id}|${it.level}|${f.id}|${it.k}`, format:f, num:num++, items:[it]}));
+    }
+  });
+  return slots;
+}
+function placementMap(){
+  const m={};
+  buildSlots().forEach(sl=>sl.items.forEach((it,i)=>{
+    const k=`${it.unit.id}|${it.level}|${sl.format.id}`;
+    (m[k]=m[k]||[]).push({num:sl.num, letter: sl.format.kind==='dung_sai' ? 'abcdefgh'[i] : ''});
+  }));
+  return m;
+}
+function cellNote(list, isDS){
+  if(!list||!list.length) return '';
+  if(!isDS) return list.length+'<br>'+list.map(x=>'C'+x.num).join(',');
+  const g=[];
+  list.forEach(x=>{ const last=g[g.length-1]; if(last&&last.num===x.num) last.l.push(x.letter); else g.push({num:x.num,l:[x.letter]}); });
+  return list.length+' ý<br>'+g.map(x=>'C'+x.num+x.l.join(',')).join(',');
+}
+function fmtTong(cau,y){ const p=[]; if(cau) p.push(String(cau)); if(y) p.push(y+' ý'); return p.join(', '); }
+function totalsByFormat(){
+  const tot={};
+  orderedFormats().forEach(f=>{ tot[f.id]={NB:0,TH:0,VD:0}; LEVELS.forEach(l=>{ allUnits().forEach(({unit})=>{ tot[f.id][l]+=unit.levels[l].alloc[f.id]||0; }); }); });
+  return tot;
+}
+function soCauThuc(f,tot){ const n=LEVELS.reduce((a,l)=>a+tot[f.id][l],0); return f.kind==='dung_sai' ? Math.ceil(n/(+f.soYMoiCau||1)) : n; }
+
+/* ---------------- TAB 3: MA TRẬN ---------------- */
+function buildMatrixTable(){
+  const of=orderedFormats(), gs=groupsOf(), nf=of.length, total=tongDiemDe(), tot=totalsByFormat();
+  const isDS=f=>f.kind==='dung_sai';
+  const colw=[4,9,15].concat(Array(nf*3).fill(3.4),[4.6,4.6,4.6,7]).join(',');
+  let h=`<table data-fs="16" data-colw="${colw}"><thead>
+  <tr><th rowspan="4">TT</th><th rowspan="4">Chủ đề/<br>Chương</th><th rowspan="4">Nội dung/<br>đơn vị kiến thức</th><th colspan="${nf*3}">Mức độ đánh giá</th><th colspan="3" rowspan="3">Tổng</th><th rowspan="4">Tỉ lệ % điểm</th></tr>
+  <tr>${gs.map(g=>`<th colspan="${g.formats.length*3}">${g.label}</th>`).join('')}</tr>
+  <tr>${of.map(f=>`<th colspan="3">${esc(f.name)}</th>`).join('')}</tr>
+  <tr>${of.map(()=>LEVELS.map(l=>`<th>${LEVEL_LABEL[l]}</th>`).join('')).join('')}${LEVELS.map(l=>`<th>${LEVEL_LABEL[l]}</th>`).join('')}</tr>
+  </thead><tbody>`;
+  shownTopics().forEach((t,ti)=>{
+    let cells='', rowDiem=0; const lv={NB:[0,0],TH:[0,0],VD:[0,0]};
+    of.forEach(f=>LEVELS.forEach(l=>{
+      const n=t.units.reduce((a,u)=>a+(u.levels[l].alloc[f.id]||0),0);
+      lv[l][isDS(f)?1:0]+=n; rowDiem+=n*diemDV(f); cells+=`<td>${n||''}</td>`;
+    }));
+    h+=`<tr><td>${ti+1}</td><td class="left">${esc(t.name)}</td><td class="left">${shownUnits(t).map(u=>esc(u.name)).join('<br>')}</td>${cells}${LEVELS.map(l=>`<td>${fmtTong(lv[l][0],lv[l][1])}</td>`).join('')}<td>${vn(rowDiem)}<br>(${pctStr(total?rowDiem/total*100:0)}%)</td></tr>`;
+  });
+  const lvTot={NB:[0,0],TH:[0,0],VD:[0,0]}, lvPts={NB:0,TH:0,VD:0}; let cauAll=0;
+  of.forEach(f=>{ LEVELS.forEach(l=>{ lvTot[l][isDS(f)?1:0]+=tot[f.id][l]; lvPts[l]+=tot[f.id][l]*diemDV(f); }); cauAll+=soCauThuc(f,tot); });
+  const bg='style="background:var(--panel2);font-weight:700;"';
+  h+=`<tr ${bg}><td colspan="3" class="left">Tổng số câu</td>${of.map(f=>LEVELS.map(l=>`<td>${tot[f.id][l]?tot[f.id][l]+(isDS(f)?' ý':''):''}</td>`).join('')).join('')}${LEVELS.map(l=>`<td>${fmtTong(lvTot[l][0],lvTot[l][1])}</td>`).join('')}<td>${cauAll}</td></tr>`;
+  h+=`<tr ${bg}><td colspan="3" class="left">Tổng số điểm</td>${of.map(f=>`<td colspan="3">${vn(LEVELS.reduce((a,l)=>a+tot[f.id][l],0)*diemDV(f))}</td>`).join('')}${LEVELS.map(l=>`<td>${vn(lvPts[l])}</td>`).join('')}<td>${vn(total)}</td></tr>`;
+  h+=`<tr ${bg}><td colspan="3" class="left">Tỉ lệ %</td>${of.map(f=>`<td colspan="3">${pctStr(total?LEVELS.reduce((a,l)=>a+tot[f.id][l],0)*diemDV(f)/total*100:0)}</td>`).join('')}${LEVELS.map(l=>`<td>${pctStr(total?lvPts[l]/total*100:0)}</td>`).join('')}<td>100</td></tr>`;
+  return h+`</tbody></table>`;
+}
+function viewMatrix(){
+  const i=state.info;
+  return `<div class="card"><h2>MA TRẬN ĐỀ KIỂM TRA ĐỊNH KÌ — ${esc(i.loai||i.ten).toUpperCase()}</h2>
+  <p class="muted" style="margin-bottom:8px;">Môn: ${esc(i.mon)} · Lớp ${esc(i.lop)} · ${esc(i.thoiGian)} · (theo mẫu Phụ lục CV 7991/BGDĐT-GDTrH). Cột Đúng – Sai tính theo số ý.</p>
+  <div class="flex no-print" style="margin-bottom:8px;"><button class="primary" onclick="exportMatrixSpecWord()">📄 Xuất Word (Ma trận + Đặc tả)</button></div>
+  <div style="overflow-x:auto;">${buildMatrixTable()}</div>
+  <p class="muted" style="margin-top:10px;font-size:.78rem;">Tỉ lệ mục tiêu: Biết ${i.tyLeNB}% · Hiểu ${i.tyLeTH}% · Vận dụng ${i.tyLeVD}%.</p></div>`;
+}
+
+/* ---------------- TAB 4: ĐẶC TẢ ---------------- */
+function buildSpecTable(){
+  const of=orderedFormats(), gs=groupsOf(), nf=of.length, total=tongDiemDe(), tot=totalsByFormat(), pm=placementMap();
+  const isDS=f=>f.kind==='dung_sai';
+  const colw=[4,9,14,34].concat(Array(nf*3).fill(3.2)).join(',');
+  let h=`<table data-fs="16" data-colw="${colw}"><thead>
+  <tr><th rowspan="4">TT</th><th rowspan="4">Chủ đề/<br>Chương</th><th rowspan="4">Nội dung/<br>đơn vị kiến thức</th><th rowspan="4">Yêu cầu cần đạt</th><th colspan="${nf*3}">Số câu hỏi ở các mức độ đánh giá</th></tr>
+  <tr>${gs.map(g=>`<th colspan="${g.formats.length*3}">${g.label}</th>`).join('')}</tr>
+  <tr>${of.map(f=>`<th colspan="3">${esc(f.name)}</th>`).join('')}</tr>
+  <tr>${of.map(()=>LEVELS.map(l=>`<th>${LEVEL_LABEL[l]}</th>`).join('')).join('')}</tr>
+  </thead><tbody>`;
+  let seq=0;
+  shownTopics().forEach((t,ti)=>{
+    const ur=shownUnits(t).map(u=>{
+      const ls=u.khongKT ? [] : LEVELS.filter(l=>(u.levels[l].yccd||'').trim() || of.some(f=>(u.levels[l].alloc[f.id]||0)>0));
+      return {u, ls: ls.length?ls:[null]};
+    });
+    const span=ur.reduce((a,x)=>a+x.ls.length,0); let firstT=true;
+    ur.forEach(({u,ls})=>{
+      seq++;
+      ls.forEach((l,li)=>{
+        const y=l?(u.levels[l].yccd||'').trim():'';
+        let tr='<tr>';
+        if(firstT){ tr+=`<td rowspan="${span}">${ti+1}</td><td class="left" rowspan="${span}">${esc(t.name)}</td>`; firstT=false; }
+        if(li===0) tr+=`<td class="left" rowspan="${ls.length}">${seq}. ${esc(u.name)}</td>`;
+        tr+=`<td class="left">${l?`<b>- ${SPEC_LABEL[l]}:</b><br>${y?esc(y).replace(/\n/g,'<br>'):'(chưa nhập)'}`:(u.khongKT?'<i>Bài thực hành, không kiểm tra</i>':'(chưa nhập)')}</td>`;
+        of.forEach(f=>LEVELS.forEach(l2=>{ tr+=`<td>${l===l2?cellNote(pm[u.id+'|'+l2+'|'+f.id],isDS(f)):''}</td>`; }));
+        h+=tr+'</tr>';
+      });
+    });
+  });
+  const bg='style="background:var(--panel2);font-weight:700;"';
+  h+=`<tr ${bg}><td colspan="4" class="left">Tổng số câu</td>${of.map(f=>LEVELS.map(l=>`<td>${tot[f.id][l]?tot[f.id][l]+(isDS(f)?' ý':''):''}</td>`).join('')).join('')}</tr>`;
+  h+=`<tr ${bg}><td colspan="4" class="left">Tổng số điểm</td>${of.map(f=>`<td colspan="3">${vn(LEVELS.reduce((a,l)=>a+tot[f.id][l],0)*diemDV(f))}</td>`).join('')}</tr>`;
+  h+=`<tr ${bg}><td colspan="4" class="left">Tỉ lệ %</td>${of.map(f=>`<td colspan="3">${pctStr(total?LEVELS.reduce((a,l)=>a+tot[f.id][l],0)*diemDV(f)/total*100:0)}</td>`).join('')}</tr>`;
+  return h+`</tbody></table>`;
+}
+function viewSpec(){
+  return `<div class="card"><h2>BẢN ĐẶC TẢ ĐỀ KIỂM TRA ĐỊNH KÌ — ${esc(state.info.loai||state.info.ten).toUpperCase()}</h2>
+  <p class="muted" style="margin-bottom:8px;">Ký hiệu C4, C5... là số thứ tự câu trong đề. Với Đúng – Sai, C13a,d nghĩa là ý a và d của câu 13.</p>
+  <div style="overflow-x:auto;">${buildSpecTable()}</div></div>`;
+}
+
+/* ---------------- TAB 5: ĐỀ THI ---------------- */
+function slotDiem(sl){ return sl.items.length*diemDV(sl.format) * (sl.format.kind==='dung_sai'?1:1/sl.items.length); }
+function slotLabel(sl){
+  if(sl.format.kind==='dung_sai') return 'Câu '+sl.num+' ('+vn(slotDiem(sl))+' điểm) · '+sl.items.map((it,k)=>'ý '+'abcdefgh'[k]+': '+it.unit.name+' ('+LEVEL_LABEL[it.level]+')').join(' · ');
+  const it=sl.items[0]; return 'Câu '+sl.num+' · '+it.topic.name+' · '+it.unit.name+' · '+LEVEL_LABEL[it.level];
+}
+function slotSig(sl){ return sl.items.map(x=>x.unit.id+x.level).join(','); }
+function setQuestion(key, field, val){
+  if(!state.questions[key]) state.questions[key]={noidung:"",dapan:"",giaithich:""};
+  state.questions[key][field]=val;
+  if((field==='noidung'||field==='dapan') && state.questions[key].kiem) state.questions[key].kiem='';
+}
+let DOCX_IMAGES=[];
+function imgControls(sl,q){
+  q=q||{}; const k=sl.key;
+  let h='<div class="no-print" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">';
+  if(q.hinhMoTa) h+=`<span class="pill" style="background:#14303a;color:#7fd4ff;">🖼 Cần hình: ${esc(q.hinhMoTa)}</span>`;
+  h+=`<button class="small" onclick="pickImage('${k}')">🖼 ${q.hinh?'Đổi hình':'Thêm hình'}</button>`;
+  if(q.hinhMoTa) h+=`<button class="small" onclick="searchImage('${k}')">🔎 Tìm hình mẫu</button>`;
+  if(q.hinh) h+=`<img src="${q.hinh.data}" style="height:48px;border-radius:4px;border:1px solid #555;"><button class="small danger" onclick="removeImage('${k}')">Xóa hình</button>`;
+  return h+'</div>';
+}
+// Chọn hình từ máy, thu nhỏ còn tối đa 640px (JPEG) để file đề không quá nặng
+function pickImage(key){
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+  inp.onchange=()=>{
+    const f=inp.files[0]; if(!f) return; const fr=new FileReader();
+    fr.onload=()=>{ const im=new Image();
+      im.onload=()=>{ const sc=Math.min(1,640/Math.max(im.width,im.height)), w=Math.max(1,Math.round(im.width*sc)), h=Math.max(1,Math.round(im.height*sc));
+        const c=document.createElement('canvas'); c.width=w; c.height=h; const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,w,h); x.drawImage(im,0,0,w,h);
+        setQuestion(key,'hinh',{data:c.toDataURL('image/jpeg',0.8),w,h}); render(); toast('✓ Đã thêm hình.'); };
+      im.onerror=()=>toast('Không đọc được file hình này.'); im.src=fr.result; };
+    fr.readAsDataURL(f); };
+  inp.click();
+}
+function removeImage(key){ if(state.questions[key]) delete state.questions[key].hinh; render(); }
+function searchImage(key){ const q=state.questions[key]||{}; window.open('https://www.google.com/search?tbm=isch&q='+encodeURIComponent(q.hinhMoTa||''),'_blank'); }
+function imgTag(sl){
+  const q=state.questions[sl.key]||{};
+  if(q.hinh) return `<p style="text-align:center;"><img data-key="${sl.key}"></p>`;
+  if(q.hinhMoTa) return `<p style="text-align:center;"><i>[Hình: ${esc(q.hinhMoTa)}]</i></p>`;
+  return '';
+}
+function issuePills(sl,q){
+  if(!q||!q.noidung) return q&&q.canhoi ? `<div class="pill bad" style="margin-top:6px;">🤖 AI hỏi lại: ${esc(q.canhoi)}</div>` : '';
+  let h=validateQ(sl,q).map(x=>`<span class="pill ${x.sev==='err'?'bad':''}" style="${x.sev==='err'?'':'background:#3a2f14;color:var(--accent2);'}margin:6px 6px 0 0;">${esc(x.msg)}</span>`).join('');
+  if(q.ysig!==undefined && !missingYccd(sl).length && q.ysig!==yccdSigOf(sl)) h+=`<span class="pill" style="background:#3a2f14;color:var(--accent2);margin:6px 6px 0 0;">Yêu cầu cần đạt đã đổi, nên soạn lại câu này</span>`;
+  if(q.kiem==='ok') h+=`<span class="pill ok" style="margin:6px 6px 0 0;">✓ AI đã thẩm định lần 2 (vẫn nên đối chiếu SGK)</span>`;
+  else if((q.kiem||'').startsWith('loi:')) h+=`<span class="pill bad" style="margin:6px 6px 0 0;">⚠ Thẩm định nghi ngờ: ${esc(q.kiem.slice(4))}</span>`;
+  if(sl.format.kind==='dung_sai' && q.sig && q.sig!==slotSig(sl)) h+=`<span class="pill bad" style="margin:6px 6px 0 0;">Phân bổ ý đã đổi, nên soạn lại câu này</span>`;
+  return h?`<div>${h}</div>`:'';
+}
+function viewExam(){
+  let html=`<div class="card"><h2>ĐỀ THI — ${esc(state.info.ten).toUpperCase()}</h2>
+  <p class="muted">Mỗi ô là một câu theo đúng bài và mức độ đã phân bổ. Bấm 🤖 để AI soạn cả nội dung lẫn đáp án.</p>
+  <div class="flex no-print" style="margin-top:8px;"><button class="primary" onclick="aiGenAll(true)">🤖 AI soạn các câu còn trống</button><button onclick="aiGenAll(false)">🤖 AI soạn lại toàn bộ</button>${reallocBtn()}<button class="primary" onclick="exportExamWord()">📄 Xuất Word (Đề thi)</button></div></div>`;
+  const slots=buildSlots();
+  orderedFormats().forEach(f=>{
+    html+=`<div class="card"><h2>${esc(f.name)} <span class="muted" style="font-size:.75rem;">(${vn(diemDV(f))} điểm/${f.kind==='dung_sai'?'ý':'câu'})</span></h2>`;
+    const hint={nhieu_lua_chon:'Câu dẫn, rồi A. B. C. D. mỗi phương án một dòng',dung_sai:'Tình huống dẫn chung, rồi các ý a) b) c) d) mỗi ý một dòng',tra_loi_ngan:'Câu hỏi có chỗ trống ……',tu_luan:'Đề bài tự luận'}[f.dang]||'Nội dung câu hỏi';
+    slots.filter(sl=>sl.format.id===f.id).forEach(sl=>{
+      const q=state.questions[sl.key]||{};
+      html+=`<div class="qslot"><div class="meta flex between"><span>${esc(slotLabel(sl))}</span><span class="no-print">${q.prev?`<button class="small" onclick="restorePrev('${sl.key}')" title="Đổi qua lại giữa câu hiện tại và câu trước đó">↩ Lấy lại câu cũ</button> `:''}<button class="small" onclick="aiGenOne('${sl.key}')">${q.noidung?'🔄 Soạn câu khác':'🤖 Soạn'}</button></span></div>
+      <textarea rows="${f.dang==='tu_luan'?4:(f.dang==='tra_loi_ngan'?2:6)}" placeholder="${hint}" oninput="setQuestion('${sl.key}','noidung',this.value)" onchange="render()">${esc(q.noidung||'')}</textarea>${imgControls(sl,q)}${issuePills(sl,q)}${q.trichdan?`<div class="muted no-print" style="font-size:.72rem;margin-top:4px;">📖 Căn cứ SGK: ${esc(q.trichdan)}</div>`:''}</div>`;
+    });
+    html+=`</div>`;
+  });
+  return html;
+}
+
+/* ---------------- XUẤT WORD (.doc) ---------------- */
+function escBr(s){ return esc(s).replace(/\r?\n/g,'<br>'); }
+/* ================= XUẤT FILE .DOCX THẬT (Office Open XML) ================= */
+/* Viết tay ZIP (STORE, không nén) + XML tối giản để Word mở không báo lỗi định dạng,
+   thay cho thủ thuật HTML giả .doc trước đây (Word hay báo "định dạng không khớp"). */
+function escXml(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function crc32(buf){
+  if(!crc32.table){
+    const t=[];
+    for(let n=0;n<256;n++){
+      let c=n;
+      for(let k=0;k<8;k++){ c = (c&1) ? (0xEDB88320 ^ (c>>>1)) : (c>>>1); }
+      t[n]=c>>>0;
+    }
+    crc32.table=t;
+  }
+  let crc = 0xFFFFFFFF;
+  for(let i=0;i<buf.length;i++) crc = (crc>>>8) ^ crc32.table[(crc ^ buf[i]) & 0xFF];
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+function makeZipBlob(files){
+  const encoder = new TextEncoder();
+  const localParts = [], centralParts = [];
+  let offset = 0;
+  const now = new Date();
+  const dosTime = ((now.getHours()<<11)|(now.getMinutes()<<5)|((now.getSeconds()/2)|0)) & 0xFFFF;
+  const dosDate = (((now.getFullYear()-1980)<<9)|((now.getMonth()+1)<<5)|now.getDate()) & 0xFFFF;
+  files.forEach(f=>{
+    const nameBytes = encoder.encode(f.name);
+    const data = f.data instanceof Uint8Array ? f.data : encoder.encode(f.data);
+    const crc = crc32(data);
+    const size = data.length;
+    const local = new Uint8Array(30 + nameBytes.length);
+    const dv = new DataView(local.buffer);
+    dv.setUint32(0, 0x04034b50, true);
+    dv.setUint16(4, 20, true); dv.setUint16(6, 0, true); dv.setUint16(8, 0, true);
+    dv.setUint16(10, dosTime, true); dv.setUint16(12, dosDate, true);
+    dv.setUint32(14, crc, true); dv.setUint32(18, size, true); dv.setUint32(22, size, true);
+    dv.setUint16(26, nameBytes.length, true); dv.setUint16(28, 0, true);
+    local.set(nameBytes, 30);
+    localParts.push(local, data);
+    const central = new Uint8Array(46 + nameBytes.length);
+    const dvc = new DataView(central.buffer);
+    dvc.setUint32(0, 0x02014b50, true);
+    dvc.setUint16(4, 20, true); dvc.setUint16(6, 20, true); dvc.setUint16(8, 0, true); dvc.setUint16(10, 0, true);
+    dvc.setUint16(12, dosTime, true); dvc.setUint16(14, dosDate, true);
+    dvc.setUint32(16, crc, true); dvc.setUint32(20, size, true); dvc.setUint32(24, size, true);
+    dvc.setUint16(28, nameBytes.length, true); dvc.setUint16(30,0,true); dvc.setUint16(32,0,true);
+    dvc.setUint16(34,0,true); dvc.setUint16(36,0,true); dvc.setUint32(38,0,true);
+    dvc.setUint32(42, offset, true);
+    central.set(nameBytes, 46);
+    centralParts.push(central);
+    offset += local.length + data.length;
+  });
+  const centralStart = offset;
+  let centralSize = 0; centralParts.forEach(c=>centralSize+=c.length);
+  const end = new Uint8Array(22);
+  const dve = new DataView(end.buffer);
+  dve.setUint32(0, 0x06054b50, true);
+  dve.setUint16(8, files.length, true); dve.setUint16(10, files.length, true);
+  dve.setUint32(12, centralSize, true); dve.setUint32(16, centralStart, true);
+  return new Blob([...localParts, ...centralParts, end], {type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+}
+// Chuyển HTML tối giản (do chính app tạo ra) sang OOXML. Bảng dùng độ rộng DXA cố định, thứ tự phần tử đúng chuẩn.
+function htmlToDocxXml(html, availW){
+  const doc=new DOMParser().parseFromString('<div>'+html+'</div>','text/html'), root=doc.body.firstChild;
+  const rp=o=>{ let x=''; if(o.b)x+='<w:b/>'; if(o.i)x+='<w:i/>'; if(o.sz)x+=`<w:sz w:val="${o.sz}"/><w:szCs w:val="${o.sz}"/>`; if(o.va)x+=`<w:vertAlign w:val="${o.va}"/>`; return x?`<w:rPr>${x}</w:rPr>`:''; };
+  const drawingRun=key=>{
+    const q=state.questions[key]; if(!q||!q.hinh) return '';
+    const m=q.hinh.data.match(/^data:image\/jpeg;base64,(.+)$/); if(!m) return '';
+    const bin=atob(m[1]), bytes=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+    const n=DOCX_IMAGES.length+1; DOCX_IMAGES.push({n,bytes});
+    let cx=q.hinh.w*9525, cy=q.hinh.h*9525; const sc=Math.min(1,2880000/cx,2520000/cy); cx=Math.round(cx*sc); cy=Math.round(cy*sc);
+    return `<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${n}" name="Hình ${n}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="${n}" name="image${n}.jpeg"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rIdImg${n}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>`;
+  };
+  const run=(t,o)=>`<w:r>${rp(o)}<w:t xml:space="preserve">${escXml(t)}</w:t></w:r>`;
+  function runs(node,o){
+    let r='';
+    node.childNodes.forEach(cn=>{
+      if(cn.nodeType===3){
+        const t=cn.textContent.replace(/[\r\n]+/g,' ');
+        if(!t.trim() && !/[ \t]/.test(t)) return;
+        t.split('\t').forEach((seg,k)=>{ if(k>0) r+='<w:r><w:tab/></w:r>'; if(seg) r+=run(seg,o); });
+      } else if(cn.nodeType===1){
+        const tg=cn.tagName.toLowerCase();
+        if(tg==='br') r+='<w:r><w:br/></w:r>';
+        else if(tg==='img') r+=drawingRun(cn.getAttribute('data-key'));
+        else if(tg==='b'||tg==='strong') r+=runs(cn,Object.assign({},o,{b:1}));
+        else if(tg==='i'||tg==='em') r+=runs(cn,Object.assign({},o,{i:1}));
+        else if(tg==='sub') r+=runs(cn,Object.assign({},o,{va:'subscript'}));
+        else if(tg==='sup') r+=runs(cn,Object.assign({},o,{va:'superscript'}));
+        else r+=runs(cn,o);
+      }
+    });
+    return r;
+  }
+  const tabsXml=sp=>sp?'<w:tabs>'+sp.split(',').map(x=>{ const [al,pos,ld]=x.split(':'); return `<w:tab w:val="${al}"${ld?` w:leader="${ld}"`:''} w:pos="${pos}"/>`; }).join('')+'</w:tabs>':'';
+  const para=(inner,o)=>`<w:p><w:pPr>${o.keep?'<w:keepNext/>':''}${tabsXml(o.tabs)}<w:spacing w:before="${o.before||0}" w:after="${o.after==null?60:o.after}"/>${o.ind?`<w:ind w:left="${o.ind}"/>`:''}${o.jc?`<w:jc w:val="${o.jc}"/>`:''}</w:pPr>${inner}</w:p>`;
+  const jcOf=n=>{ const st=(n.getAttribute&&n.getAttribute('style'))||''; const m=st.match(/text-align:\s*(center|right|justify|left)/); return m?(m[1]==='justify'?'both':m[1]):''; };
+  function tableXml(tb){
+    const fs=+tb.getAttribute('data-fs')||0, trs=Array.from(tb.querySelectorAll('tr')), occ={}, grid=[]; let maxC=0;
+    trs.forEach((tr,r)=>{
+      const cells=Array.from(tr.children).filter(c=>/^t[dh]$/i.test(c.tagName)), oc=occ[r]||[], row=[]; let cur=0, ci=0;
+      while(ci<cells.length || oc.some(o=>o.start>=cur)){
+        const o=oc.find(x=>x.start===cur);
+        if(o){ row.push({merge:1,col:cur,span:o.span}); cur+=o.span; continue; }
+        if(ci>=cells.length) break;
+        const n=cells[ci++], cs=parseInt(n.getAttribute('colspan')||'1',10)||1, rs=parseInt(n.getAttribute('rowspan')||'1',10)||1;
+        row.push({n,col:cur,span:cs,rs});
+        if(rs>1) for(let q=r+1;q<r+rs;q++){ (occ[q]=occ[q]||[]).push({start:cur,span:cs}); }
+        cur+=cs;
+      }
+      maxC=Math.max(maxC,cur); grid.push({row, head:!!tr.closest('thead'), h:parseInt(tr.getAttribute('data-h')||'0',10)||0});
+    });
+    let w=(tb.getAttribute('data-colw')||'').split(',').map(Number).filter(x=>x>0);
+    if(w.length!==maxC) w=Array(maxC).fill(1);
+    const sw=w.reduce((a,b)=>a+b,0), cw=w.map(x=>Math.floor(availW*x/sw)); cw[maxC-1]+=availW-cw.reduce((a,b)=>a+b,0);
+    const spanW=(c,n)=>cw.slice(c,c+n).reduce((a,b)=>a+b,0);
+    const B=['top','left','bottom','right','insideH','insideV'].map(k=>`<w:${k} w:val="single" w:sz="4" w:space="0" w:color="000000"/>`).join('');
+    let x=`<w:tbl><w:tblPr><w:tblW w:w="${availW}" w:type="dxa"/><w:jc w:val="center"/><w:tblBorders>${B}</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:left w:w="57" w:type="dxa"/><w:right w:w="57" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${cw.map(c=>`<w:gridCol w:w="${c}"/>`).join('')}</w:tblGrid>`;
+    grid.forEach(g=>{
+      x+=`<w:tr><w:trPr><w:cantSplit/>${g.h?`<w:trHeight w:val="${g.h}" w:hRule="atLeast"/>`:''}${g.head?'<w:tblHeader/>':''}</w:trPr>`;
+      g.row.forEach(c=>{
+        const tcw=`<w:tcW w:w="${spanW(c.col,c.span)}" w:type="dxa"/>${c.span>1?`<w:gridSpan w:val="${c.span}"/>`:''}`;
+        if(c.merge){ x+=`<w:tc><w:tcPr>${tcw}<w:vMerge/></w:tcPr><w:p/></w:tc>`; return; }
+        const th=c.n.tagName.toLowerCase()==='th', left=c.n.classList.contains('left')||jcOf(c.n)==='left';
+        const o={b:th?1:0, sz:fs||0}, al=left?'left':'center';
+        let inner='';
+        if(c.n.querySelector('p')){ c.n.childNodes.forEach(cn=>{ if(cn.nodeType===1&&cn.tagName.toLowerCase()==='p') inner+=para(runs(cn,o),{jc:jcOf(cn)||al,before:20,after:20,tabs:cn.getAttribute('data-tabs')}); }); }
+        else inner=para(runs(c.n,o),{jc:al,before:20,after:20});
+        x+=`<w:tc><w:tcPr>${tcw}${c.rs>1?'<w:vMerge w:val="restart"/>':''}${th?'<w:shd w:val="clear" w:color="auto" w:fill="E7E6E6"/>':''}<w:vAlign w:val="center"/></w:tcPr>${inner}</w:tc>`;
+      });
+      x+='</w:tr>';
+    });
+    return x+'</w:tbl><w:p><w:pPr><w:spacing w:after="60"/></w:pPr></w:p>';
+  }
+  let xml='';
+  (function walk(node){
+    node.childNodes.forEach(cn=>{
+      if(cn.nodeType!==1) return;
+      const tg=cn.tagName.toLowerCase();
+      if(tg==='h1') xml+=para(run(cn.textContent,{b:1,sz:32}),{jc:'center',before:120,after:120});
+      else if(tg==='h2') xml+=para(run(cn.textContent,{b:1,sz:26}),{jc:jcOf(cn),before:160,keep:1});
+      else if(tg==='p') xml+=para(runs(cn,{sz:+cn.getAttribute('data-sz')||0}),{jc:jcOf(cn),tabs:cn.getAttribute('data-tabs'),ind:+cn.getAttribute('data-ind')||0});
+      else if(tg==='table') xml+=tableXml(cn);
+      else if(tg==='div'){ if((cn.getAttribute('style')||'').includes('page-break')) xml+='<w:p><w:r><w:br w:type="page"/></w:r></w:p>'; else walk(cn); }
+      else walk(cn);
+    });
+  })(root);
+  return xml;
+}
+const PG={portrait:{w:11906,h:16838,m:1134}, landscape:{w:16838,h:11906,m:850}};
+function sectPrXml(o){ const g=PG[o]; return `<w:sectPr><w:pgSz w:w="${g.w}" w:h="${g.h}"${o==='landscape'?' w:orient="landscape"':''}/><w:pgMar w:top="${g.m}" w:right="${g.m}" w:bottom="${g.m}" w:left="${g.m}" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr>`; }
+function buildDocxBlob(parts){
+  if(typeof parts==='string') parts=[{html:parts,orient:'portrait'}];
+  let body=''; DOCX_IMAGES=[];
+  parts.forEach((pt,i)=>{
+    const o=pt.orient||'portrait', g=PG[o];
+    body+=htmlToDocxXml(pt.html, g.w-2*g.m);
+    body+= i<parts.length-1 ? `<w:p><w:pPr>${sectPrXml(o)}</w:pPr></w:p>` : sectPrXml(o);
+  });
+  const documentXml=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><w:body>${body}</w:body></w:document>`;
+  const stylesXml=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:eastAsia="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="26"/><w:szCs w:val="26"/><w:lang w:val="vi-VN"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="60" w:line="259" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults></w:styles>`;
+  const contentTypes=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpeg" ContentType="image/jpeg"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>`;
+  const rootRels=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`;
+  const docRels=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>${DOCX_IMAGES.map(im=>`<Relationship Id="rIdImg${im.n}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image${im.n}.jpeg"/>`).join('')}</Relationships>`;
+  return makeZipBlob([{name:'[Content_Types].xml',data:contentTypes},{name:'_rels/.rels',data:rootRels},{name:'word/document.xml',data:documentXml},{name:'word/styles.xml',data:stylesXml},{name:'word/_rels/document.xml.rels',data:docRels}].concat(DOCX_IMAGES.map(im=>({name:'word/media/image'+im.n+'.jpeg',data:im.bytes}))));
+}
+function exportWordDoc(parts, filename){
+  const blob=buildDocxBlob(parts), url=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=url; a.download=(filename||'de_kiem_tra').replace(/\s+/g,'_')+'.docx';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  toast('✓ Đã xuất file Word: '+a.download);
+}
+
+/* ---------- NỘI DUNG FILE WORD THEO MẪU ---------- */
+const DANG_HEAD={nhieu_lua_chon:'TRẮC NGHIỆM NHIỀU LỰA CHỌN', dung_sai:'TRẮC NGHIỆM ĐÚNG - SAI', tra_loi_ngan:'TRẮC NGHIỆM TRẢ LỜI NGẮN', tu_luan:'TỰ LUẬN'};
+const DANG_DESC={nhieu_lua_chon:'Trắc nghiệm nhiều lựa chọn (một lựa chọn đúng)', dung_sai:'Trắc nghiệm đúng – sai', tra_loi_ngan:'Trắc nghiệm trả lời ngắn', tu_luan:'Tự luận'};
+const ROM=['I','II','III','IV','V','VI','VII','VIII'];
+const headOf=f=>DANG_HEAD[f.dang]||esc(f.name).toUpperCase();
+const sumD=g=>g.formats.reduce((a,f)=>a+f.tongDiem,0);
+function groupsSplit(){ const gs=groupsOf(); return {tn:gs.find(g=>g.label==='TNKQ'), tl:gs.find(g=>g.label!=='TNKQ')}; }
+function stepsHtml(){
+  const i=state.info, tot=totalsByFormat(), {tn,tl}=groupsSplit(), total=tongDiemDe();
+  let h=`<p><b>Trường:</b> ${esc(i.truong)}</p><p><b>Tổ:</b> ${esc(i.to)}</p><p><b>Họ và tên giáo viên:</b> ${esc(i.gv)}</p>`;
+  const dl=[i.tuanTiet, i.ngay?'Ngày kiểm tra: '+i.ngay:'', i.lopApDung?'Lớp: '+i.lopApDung:''].filter(Boolean).join(' - ');
+  if(dl) h+=`<p>${esc(dl)}</p>`;
+  h+=`<h1>${esc(i.ten).toUpperCase()}</h1><p style="text-align:center;"><b>MÔN ${esc(i.mon).toUpperCase()} ${esc(i.lop)}</b></p><p style="text-align:center;"><b>THỜI GIAN LÀM BÀI: ${esc(i.thoiGian).toUpperCase()}</b></p>`;
+  h+=`<p><b>Bước 1. Xác định mục đích của đề kiểm tra</b></p><p style="text-align:justify;">Đề kiểm tra nhằm đánh giá mức độ đạt được của học sinh về kiến thức, kĩ năng sau khi học xong các nội dung: ${shownTopics().map(t=>esc(t.name)).join('; ')}. Đề đánh giá ở cả ba mức độ nhận thức: biết, hiểu và vận dụng; kết quả là cơ sở để giáo viên điều chỉnh việc dạy học và để học sinh điều chỉnh cách học.</p>`;
+  const pc=g=>g&&total?pctStr(sumD(g)/total*100):'0';
+  const hinhThuc = tn&&tl ? `Đề kiểm tra kết hợp trắc nghiệm khách quan và tự luận (${pc(tn)}% trắc nghiệm, ${pc(tl)}% tự luận).` : (tn?'Đề kiểm tra hình thức trắc nghiệm khách quan.':'Đề kiểm tra hình thức tự luận.');
+  h+=`<p><b>Bước 2. Xác định hình thức đề kiểm tra</b></p><p>${hinhThuc}</p>`;
+  h+=`<p><b>Bước 3. Xây dựng ma trận, bản đặc tả và hướng dẫn chấm</b></p><p><b>Cấu trúc đề:</b> ${pctStr(+i.tyLeNB)}% biết; ${pctStr(+i.tyLeTH)}% hiểu; ${pctStr(+i.tyLeVD)}% vận dụng.</p>`;
+  [tn,tl].forEach((g,gi)=>{ if(!g) return;
+    h+=`<p><b>${g===tn?'A. TRẮC NGHIỆM':'B. TỰ LUẬN'} (${vn(sumD(g))} điểm)</b></p>`;
+    g.formats.forEach((f,k)=>{ const n=soCauThuc(f,tot); h+=`<p>${k+1}. ${esc(DANG_DESC[f.dang]||f.name)}: ${n} câu${f.kind==='dung_sai'?' = '+soDonVi(f)+' ý':''} = ${vn(f.tongDiem)} điểm.</p>`; });
+  });
+  return h;
+}
+function examHeaderHtml(){
+  const i=state.info;
+  const left=`<b>TRƯỜNG ${esc(i.truong).toUpperCase()}</b><br>Họ và tên: ………………<br>Lớp: ………………`;
+  const mid=`<b>${esc(i.ten).toUpperCase()}</b><br>NĂM HỌC: ${esc(i.namHoc)}<br>MÔN: ${esc(i.mon)} &nbsp; KHỐI: ${esc(i.lop)}<br>NGÀY: ${esc(i.ngay)}<br>Thời gian làm bài: ${esc(i.thoiGian)}`;
+  return `<table data-fs="22" data-colw="30,38,18,14"><tr><td class="left">${left}</td><td>${mid}</td><td>Chữ ký giám thị<br><br><br></td><td>Mật mã<br><br><br></td></tr><tr><td class="left">Số báo danh: ………</td><td class="left">Số thứ tự: ………</td><td></td><td></td></tr></table>
+  <table data-fs="22" data-colw="30,20,20,15,15"><tr><td>Nhận xét của giám khảo</td><td>Chữ ký giám khảo</td><td>Điểm bằng số</td><td>Điểm bằng chữ</td><td>Mật mã</td></tr><tr data-h="900"><td></td><td></td><td></td><td></td><td></td></tr></table>`;
+}
+function answerSheetHtml(g){
+  const slots=buildSlots(); let h='';
+  g.formats.forEach(f=>{
+    const ss=slots.filter(s=>s.format.id===f.id); if(!ss.length) return;
+    if(f.dang==='dung_sai'){
+      const per=+f.soYMoiCau||4, L='abcdefgh'.slice(0,per).split('');
+      h+=`<table data-colw="${[20].concat(L.map(()=>15)).join(',')}"><tr><th>Câu</th>${L.map(x=>`<th>${x}</th>`).join('')}</tr>${ss.map(sl=>`<tr data-h="450"><td>${sl.num}</td>${L.map(()=>'<td></td>').join('')}</tr>`).join('')}</table>`;
+    } else {
+      const size=f.dang==='nhieu_lua_chon'?12:6;
+      for(let k=0;k<ss.length;k+=size){ const c=ss.slice(k,k+size);
+        h+=`<table><tr>${c.map(sl=>`<th>Câu ${sl.num}${f.dang==='tra_loi_ngan'?`<br>(${vn(diemDV(f))}đ)`:''}</th>`).join('')}</tr><tr data-h="500">${c.map(()=>'<td></td>').join('')}</tr></table>`; }
+    }
+  });
+  return h;
+}
+function slotHtml(sl){
+  const f=sl.format, q=state.questions[sl.key]||{}, nd=q.noidung||'';
+  if(!nd) return `<p><b>Câu ${sl.num}.</b> <i>(chưa soạn)</i></p>`;
+  if(f.dang==='nhieu_lua_chon'){
+    const p=parseMCQ(nd), L=['A','B','C','D'], os=L.map(x=>x+'. '+(p.opts[x]||'')), mx=Math.max(...L.map(x=>(p.opts[x]||'').length));
+    let opt;
+    if(mx<=12) opt=`<p data-tabs="left:2409,left:4819,left:7228">${os.map(esc).join('\t')}</p>`;
+    else if(mx<=32) opt=`<p data-tabs="left:4819">${esc(os[0])}\t${esc(os[1])}</p><p data-tabs="left:4819">${esc(os[2])}\t${esc(os[3])}</p>`;
+    else opt=os.map(o=>`<p>${esc(o)}</p>`).join('');
+    return `<p><b>Câu ${sl.num}.</b> ${escBr(p.stem)}</p>${imgTag(sl)}${opt}`;
+  }
+  if(f.dang==='dung_sai'){
+    const p=parseDS(nd), n=sl.items.length;
+    return `<p><b>Câu ${sl.num}. (${vn(slotDiem(sl))} điểm)</b> Hãy xác định các phát biểu sau là Đúng (Đ) hay Sai (S).</p>${p.lead?`<p>${escBr(p.lead)}</p>`:''}${imgTag(sl)}<table data-colw="8,80,12"><tr><th>TT</th><th>Nội dung</th><th>Đ/S</th></tr>${'abcdefgh'.slice(0,n).split('').map(k=>`<tr><td>${k}</td><td class="left">${esc(p.items[k]||'')}</td><td></td></tr>`).join('')}</table>`;
+  }
+  if(f.dang==='tu_luan'){
+    const lines=Math.max(3,Math.round(slotDiem(sl)*6));
+    return `<p><b>Câu ${sl.num}. (${vn(slotDiem(sl))} điểm)</b> ${escBr(nd)}</p>`+imgTag(sl)+Array(lines).fill('<p data-tabs="right:9638:dot">\t</p>').join('');
+  }
+  return `<p><b>Câu ${sl.num}.</b> ${escBr(nd)}</p>`+imgTag(sl);
+}
+function buildExamWordBody(){
+  const slots=buildSlots(), {tn,tl}=groupsSplit();
+  let h=examHeaderHtml()+`<p style="text-align:center;"><b>ĐỀ CHÍNH THỨC</b></p>`;
+  if(tn){
+    h+=`<p><b>A. TRẮC NGHIỆM (${vn(sumD(tn))} điểm)</b></p><p><i>Chọn đáp án đúng và điền vào bảng sau:</i></p>${answerSheetHtml(tn)}`;
+    tn.formats.forEach((f,k)=>{ h+=`<p><b>PHẦN ${ROM[k]}: ${headOf(f)} (${vn(f.tongDiem)} điểm)</b></p>`+slots.filter(s=>s.format.id===f.id).map(slotHtml).join(''); });
+  }
+  if(tl){ h+=`<p><b>B. TỰ LUẬN (${vn(sumD(tl))} điểm)</b></p>`; tl.formats.forEach(f=>{ h+=slots.filter(s=>s.format.id===f.id).map(slotHtml).join(''); }); }
+  return h+`<p style="text-align:center;"><i>—— HẾT ——</i></p>`;
+}
+function dsGuide(f){
+  const b=dsBangOf(f), mode=(f.dsMode==='chuan'||f.dsMode==='tuy_chinh')?f.dsMode:'deu';
+  return mode==='deu' ? `Mỗi ý đúng được ${vn(diemDV(f))} điểm.` : 'Học sinh chọn đúng '+b.map((v,j)=>`${j+1} ý được ${vn(v)} điểm`).join('; ')+'.';
+}
+function buildAnswerWordBody(opts){
+  opts=opts||{}; const slots=buildSlots(), {tn,tl}=groupsSplit(); let h='';
+  if(opts.title!==false) h+=`<p style="text-align:center;"><b>HƯỚNG DẪN CHẤM VÀ THANG ĐIỂM</b></p>`;
+  const ans=sl=>((state.questions[sl.key]||{}).dapan||'').trim();
+  if(tn){
+    h+=`<p><b>A. TRẮC NGHIỆM: ${vn(sumD(tn))} điểm</b></p>`;
+    tn.formats.forEach((f,k)=>{
+      const ss=slots.filter(s=>s.format.id===f.id); h+=`<p><b>PHẦN ${ROM[k]}: ${headOf(f)} (${vn(f.tongDiem)} điểm)</b></p>`;
+      if(f.dang==='dung_sai'){
+        const per=+f.soYMoiCau||4, L='abcdefgh'.slice(0,per).split('');
+        h+=`<p>${dsGuide(f)}</p><table data-colw="${[20].concat(L.map(()=>15)).join(',')}"><tr><th>Câu</th>${L.map(x=>`<th>${x}</th>`).join('')}</tr>${ss.map(sl=>{ const r=parseDSAns(ans(sl)); return `<tr><td>${sl.num}</td>${L.map(x=>`<td>${r[x]||''}</td>`).join('')}</tr>`; }).join('')}</table>`;
+      } else {
+        h+=`<p>Mỗi câu đúng ${vn(diemDV(f))} điểm.</p>`;
+        const size=f.dang==='nhieu_lua_chon'?12:6;
+        for(let j=0;j<ss.length;j+=size){ const c=ss.slice(j,j+size); h+=`<table><tr>${c.map(sl=>`<th>Câu ${sl.num}</th>`).join('')}</tr><tr>${c.map(sl=>`<td>${esc(ans(sl))}</td>`).join('')}</tr></table>`; }
+      }
+    });
+  }
+  if(tl){
+    h+=`<p><b>B. TỰ LUẬN: ${vn(sumD(tl))} điểm</b></p>`;
+    tl.formats.forEach(f=>slots.filter(s=>s.format.id===f.id).forEach(sl=>{
+      const rows=parseTL(ans(sl)); h+=`<p><b>Câu ${sl.num}. (${vn(slotDiem(sl))} điểm)</b></p>`;
+      if(rows.length && rows.every(r=>r.pts!=null)) h+=`<table data-colw="85,15"><tr><th>Nội dung</th><th>Điểm</th></tr>${rows.map(r=>`<tr><td class="left">${esc(r.t)}</td><td>${vn(r.pts)}</td></tr>`).join('')}</table>`;
+      else h+=`<p>${escBr(ans(sl))||'<i>(chưa có)</i>'}</p>`;
+    }));
+  }
+  if(opts.explain){
+    const ex=slots.filter(sl=>(state.questions[sl.key]||{}).giaithich);
+    if(ex.length) h+=`<p><b>Giải thích đáp án</b></p>`+ex.map(sl=>`<p><b>Câu ${sl.num}:</b> ${escBr(state.questions[sl.key].giaithich)}</p>`).join('');
+  }
+  return h;
+}
+function approvalHtml(){
+  const i=state.info;
+  return `<p><b>Bước 5. Duyệt và thẩm định đề kiểm tra</b></p><table data-colw="34,33,33"><tr><th>Ban giám hiệu duyệt</th><th>Tổ trưởng chuyên môn</th><th>Giáo viên bộ môn</th></tr><tr data-h="1300"><td></td><td></td><td></td></tr><tr><td></td><td>${esc(i.ttcm)}</td><td>${esc(i.gv)}</td></tr></table>`;
+}
+const PB='<div style="page-break-before:always;"></div>';
+function soCauThieu(){ return buildSlots().filter(sl=>{ const q=state.questions[sl.key]; return !q||!q.noidung||!q.dapan; }).length; }
+function guardExport(){
+  const R=runChecks().filter(x=>x.sev==='err'), d=R.filter(x=>/^Câu \d+: Trùng/.test(x.t)).length, e=R.length-d;
+  if(d && !confirm(`Có ${d} câu bị TRÙNG hoặc giống nhau trong đề (xem tab "7. Kiểm tra"). Vẫn xuất file Word?`)) return false;
+  return e===0 || confirm(`Còn ${e} lỗi cần sửa (xem tab "7. Kiểm tra"). Vẫn xuất file Word?`);
+}
+function exportAllWord(){
+  if(!guardExport()) return;
+  const lo=esc(state.info.loai||state.info.ten).toUpperCase();
+  exportWordDoc([
+    {orient:'portrait', html:stepsHtml()},
+    {orient:'landscape', html:`<p><b>3.1 MA TRẬN ĐỀ KIỂM TRA ${lo}</b></p>${buildMatrixTable()}${PB}<p><b>3.2 BẢN ĐẶC TẢ ĐỀ KIỂM TRA ${lo}</b></p>${buildSpecTable()}`},
+    {orient:'portrait', html:`<p><b>Bước 4. Biên soạn câu hỏi theo ma trận và bản đặc tả</b></p><p><b>4.1. CÂU HỎI</b></p>${PB}${buildExamWordBody()}${PB}<p><b>4.2. HƯỚNG DẪN CHẤM VÀ THANG ĐIỂM</b></p>${buildAnswerWordBody({title:false})}${approvalHtml()}`}
+  ], 'Bo_de_day_du_'+(state.info.ten||'de'));
+}
+function exportMatrixSpecWord(){
+  const lo=esc(state.info.loai||state.info.ten).toUpperCase();
+  exportWordDoc([{orient:'landscape', html:`<p><b>3.1 MA TRẬN ĐỀ KIỂM TRA ${lo}</b></p>${buildMatrixTable()}${PB}<p><b>3.2 BẢN ĐẶC TẢ ĐỀ KIỂM TRA ${lo}</b></p>${buildSpecTable()}`}], 'Ma_tran_dac_ta_'+(state.info.ten||'de'));
+}
+function exportExamWord(){ if(guardExport()) exportWordDoc(buildExamWordBody(), 'De_kiem_tra_'+(state.info.ten||'de')); }
+function exportAnswerWord(){ if(guardExport()) exportWordDoc(buildAnswerWordBody({explain:confirm('Kèm giải thích ngắn cho từng câu trong file đáp án?')}), 'Dap_an_'+(state.info.ten||'de')); }
+
+/* ---------------- AI: SOẠN CÂU HỎI + ĐÁP ÁN ---------------- */
+const LEVEL_DESC={NB:'nhận biết (nêu, nhận ra, nhớ lại kiến thức)',TH:'thông hiểu (giải thích, so sánh, phân biệt, suy ra)',VD:'vận dụng (áp dụng kiến thức vào tình huống, bài tính)'};
+function hashStr(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))|0; } return h>>>0; }
+function mulberry32(seed){ return function(){ seed|=0; seed=(seed+0x6D2B79F5)|0; let t=Math.imul(seed^(seed>>>15),1|seed); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; }; }
+function wc(t){ const x=(t||'').trim(); return x?x.split(/\s+/).length:0; }
+// Đáp án đúng A/B/C/D của cả đề: số lượng gần bằng nhau, thứ tự xáo trộn nhưng cố định theo đề
+function targetLetter(sl){
+  const list=buildSlots().filter(x=>x.format.id===sl.format.id), total=list.length, L=['A','B','C','D'];
+  const base=Math.floor(total/4), rem=total%4, seed=hashStr(sl.format.id+'|'+total+'|'+(state.info.ten||''));
+  const rng=mulberry32(seed), rl=L.slice();
+  for(let i=3;i>0;i--){ const j=Math.floor(rng()*(i+1)); [rl[i],rl[j]]=[rl[j],rl[i]]; }
+  const cnt={A:base,B:base,C:base,D:base}; for(let i=0;i<rem;i++) cnt[rl[i]]++;
+  const arr=[]; L.forEach(x=>{ for(let k=0;k<cnt[x];k++) arr.push(x); });
+  const r2=mulberry32(seed+1); for(let i=arr.length-1;i>0;i--){ const j=Math.floor(r2()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+  return arr[list.findIndex(x=>x.key===sl.key)]||'A';
+}
+function parseMCQ(text){
+  const t=String(text||''), opts={}, stem=[]; let cur=null;
+  t.split(/\r?\n/).forEach(line=>{
+    const m=line.match(/^\s*([A-D])\s*[.)]\s*(.*)$/);
+    if(m && !(m[1] in opts)){ opts[m[1]]=m[2].trim(); cur=m[1]; }
+    else if(cur){ if(line.trim()) opts[cur]+=' '+line.trim(); } else stem.push(line);
+  });
+  if(Object.keys(opts).length<4){ // các phương án nằm chung một dòng
+    const i=t.search(/(^|\s)A\s*[.)]\s/);
+    if(i>=0){ const o2={}, parts=t.slice(i).split(/(?:^|\s)([A-D])\s*[.)]\s+/);
+      for(let k=1;k<parts.length;k+=2) if(!(parts[k] in o2)) o2[parts[k]]=(parts[k+1]||'').trim();
+      if(Object.keys(o2).length>Object.keys(opts).length) return {stem:t.slice(0,i).trim(), opts:o2}; }
+  }
+  return {stem:stem.join('\n').trim(), opts};
+}
+function canonMCQ(stem,opts){ return stem+'\n'+['A','B','C','D'].map(L=>L+'. '+(opts[L]||'')).join('\n'); }
+function parseDS(text){
+  const lead=[], items={}; let cur=null;
+  String(text||'').split(/\r?\n/).forEach(line=>{
+    const m=line.match(/^\s*([a-d])\s*[.)]\s*(.*)$/i);
+    if(m && !(m[1].toLowerCase() in items)){ cur=m[1].toLowerCase(); items[cur]=m[2].trim(); }
+    else if(cur){ if(line.trim()) items[cur]+=' '+line.trim(); } else lead.push(line);
+  });
+  return {lead:lead.join('\n').trim(), items};
+}
+function parseDSAns(d){
+  const r={}, t=String(d||''), re=/(?:^|[\s,;(])([a-d])\s*[).:\-–=]?\s*(Đúng|Sai|Đ|S)(?![\p{L}])/giu; let m;
+  while((m=re.exec(t))){ const k=m[1].toLowerCase(); if(!(k in r)) r[k]=/^đ/i.test(m[2])?'Đ':'S'; }
+  if(!Object.keys(r).length){ const seq=t.match(/[ĐS](?![\p{L}])/gu); if(seq) seq.forEach((v,i)=>{ r['abcdefgh'[i]]=v; }); }
+  return r;
+}
+function parseTL(d){
+  return String(d||'').split(/\r?\n/).map(x=>x.trim().replace(/^[-•*]\s*/,'')).filter(Boolean).map(l=>{
+    const m=l.match(/^(.*?)\s*\(\s*(\d+(?:[.,]\d+)?)\s*(?:đ|điểm|d)?\s*\)\s*[.;]?$/i);
+    return m ? {t:m[1].trim(), pts:parseFloat(m[2].replace(',','.'))} : {t:l, pts:null};
+  });
+}
+// Kiểm tra một câu: err = phải sửa, warn = nên xem lại
+function sgkOf(sl){ return sl.items.some(it=>(it.unit.sgk||'').trim()); }
+function bannedHits(sl,text){
+  const t=(text||'').toLowerCase(), out=[];
+  sl.items.forEach(it=>{ (it.unit.ngoai||'').split(/[;\n,]+/).map(x=>x.trim()).filter(Boolean).forEach(w=>{ if(t.includes(w.toLowerCase()) && !out.includes(w)) out.push(w); }); });
+  return out;
+}
+function validateQ(sl,q){
+  const f=sl.format, out=[], E=m=>out.push({sev:'err',msg:m}), W=m=>out.push({sev:'warn',msg:m});
+  const nd=((q&&q.noidung)||'').trim(), da=((q&&q.dapan)||'').trim();
+  if(!nd){ E('Chưa có nội dung'); return out; }
+  { const my=missingYccd(sl); if(my.length) E('Bài '+my.join('; ')+' chưa có yêu cầu cần đạt, cần nhập rồi soạn lại câu này'); }
+  if(!da) E('Chưa có đáp án');
+  { const bh=bannedHits(sl,nd+' '+da+' '+((q&&q.giaithich)||'')); if(bh.length) E('Có nội dung ngoài chương trình: '+bh.join(', ')); }
+  if(!sgkOf(sl)) W('Bài chưa có nội dung SGK, cần đối chiếu kỹ với sách trước khi dùng');
+  if(f.dang==='nhieu_lua_chon'){
+    const p=parseMCQ(nd), LL=['A','B','C','D'];
+    if(!p.stem) E('Thiếu câu dẫn');
+    if(LL.some(L=>!p.opts[L])) E('Chưa đủ 4 phương án A–D');
+    else {
+      const v=LL.map(L=>p.opts[L].toLowerCase().replace(/[\s.,;]+/g,' ').trim());
+      if(new Set(v).size<4) E('Có phương án trùng nhau');
+      if(LL.some(L=>/tất cả|cả [a-d]\b/i.test(p.opts[L]))) W('Có phương án kiểu "tất cả" hoặc "cả A và B"');
+      LL.forEach(L=>{ if(wc(p.opts[L])>12) W('Phương án '+L+' dài hơn 12 từ'); });
+    }
+    if(wc(p.stem)>40) W('Câu dẫn dài ('+wc(p.stem)+' từ)');
+    if(da && !/^[A-D]$/.test(da)) E('Đáp án phải là một chữ A, B, C hoặc D');
+    { const ans=(da.match(/^[A-D]$/)||[''])[0];
+      if(ans && LL.every(L=>p.opts[L])){
+        const la=wc(p.opts[ans]), oth=LL.filter(L=>L!==ans).map(L=>wc(p.opts[L])), avg=oth.reduce((a,b)=>a+b,0)/3;
+        if(la>=6 && la>Math.max(...oth) && la>=avg*1.6) W('Đáp án đúng dài hơn hẳn các phương án còn lại, dễ đoán');
+      } }
+  } else if(f.dang==='dung_sai'){
+    const p=parseDS(nd), n=sl.items.length, ks=Object.keys(p.items);
+    if(!p.lead) W('Chưa có tình huống dẫn chung');
+    if(ks.length!==n) E('Cần đúng '+n+' ý a–'+'abcdefgh'[n-1]+', đang có '+ks.length);
+    if(da && Object.keys(parseDSAns(da)).length<n) E('Đáp án chưa đủ Đúng/Sai cho '+n+' ý');
+    if(wc(p.lead)>60) W('Tình huống dẫn dài');
+    ks.forEach(k=>{ if(wc(p.items[k])>25) W('Ý '+k+' dài hơn 25 từ'); });
+  } else if(f.dang==='tra_loi_ngan'){
+    const kd=kieuOf(f), isNum=/^[-+]?\d+([.,]\d+)?$/.test(da);
+    if(da){
+      if(kd==='so' && !isNum) W('Đáp án chưa phải một con số');
+      if(kd==='chu' && isNum) W('Đáp án chưa phải từ hoặc cụm từ (đang là số)');
+      if(kd!=='so' && wc(da)>5) W('Đáp án dài hơn 5 từ, nên là từ hoặc cụm từ ngắn');
+    }
+    if(wc(nd)>40) W('Câu hỏi dài');
+    if(/(dưới|trên|ít nhất|nhiều nhất|tối đa|tối thiểu|không quá|ít hơn|nhiều hơn)\s+(bao nhiêu|mấy)/i.test(nd)) E('Câu hỏi có nhiều đáp án đúng (kiểu "dưới/trên bao nhiêu"), cần hỏi một giá trị cố định trong sách');
+    if(/có\s+(bao nhiêu|mấy)\s+(đơn vị|yếu tố|loại|giai đoạn|bước|thành phần|dạng|kĩ năng|kỹ năng|phương pháp)/i.test(nd)) W('Câu chỉ đếm số lượng trong danh sách, nên hỏi nội dung có ý nghĩa hơn');
+  } else if(f.dang==='tu_luan'){
+    if(da){ const rows=parseTL(da);
+      if(rows.some(r=>r.pts==null)) E('Mỗi ý trong đáp án phải ghi điểm cuối dòng, ví dụ (0,5đ)');
+      else { const sum=rows.reduce((a,r)=>a+r.pts,0); if(Math.abs(sum-slotDiem(sl))>0.01) E('Tổng điểm các ý là '+vn(sum)+', cần '+vn(slotDiem(sl))); } }
+  } else if(wc(nd)>60) W('Câu hỏi dài');
+  dupIssues(sl,q).forEach(x=>out.push(x));
+  trichIssues(sl,q).forEach(x=>out.push(x));
+  return out;
+}
+function yccdLines(u,l){ return (u.levels[l].yccd||'').split(/\n+/).map(x=>x.replace(/^[-•\s]+/,'').trim()).filter(x=>x && !/(\.{3}|…)\s*$/.test(x)); }
+// Yêu cầu cần đạt hợp lệ = có ít nhất 1 dòng đã viết xong (dòng mẫu "Nêu được ..." chưa tính)
+function hasYccd(u,l){ return yccdLines(u,l).length>0; }
+// Các bài/mức độ của một câu mà CHƯA có yêu cầu cần đạt (không có yêu cầu thì không được soạn câu hỏi)
+function missingYccd(sl){
+  const seen=new Set(), out=[];
+  sl.items.forEach(it=>{
+    if(yccdLines(it.unit,it.level).length) return;
+    const k=it.unit.id+'|'+it.level; if(seen.has(k)) return; seen.add(k);
+    out.push('\"'+it.unit.name+'\" (mức '+LEVEL_LABEL[it.level]+')');
+  });
+  return out;
+}
+// Chữ ký yêu cầu cần đạt đã dùng để soạn câu (để biết khi yêu cầu bị sửa sau đó)
+function yccdSigOf(sl){ return sl.items.map(it=>{ const L=yccdLines(it.unit,it.level); return L.length?L[it.ul%L.length]:''; }).join('|'); }
+/* ===== Chọn đoạn SGK liên quan, kiểm căn cứ trích dẫn, chống trùng câu ===== */
+const SGK_EXCERPT_CAP = 3500; // số ký tự SGK gửi cho AI mỗi bài (chỉ các đoạn liên quan nhất)
+const SUPER_MAP={'⁰':'0','¹':'1','²':'2','³':'3','⁴':'4','⁵':'5','⁶':'6','⁷':'7','⁸':'8','⁹':'9'};
+function vnKey(s){
+  s=String(s||'').replace(/[₀-₉]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x2080+48)).replace(/[⁰¹²³⁴-⁹]/g,c=>SUPER_MAP[c]||c);
+  return sgkNorm(s);
+}
+const STOPW=new Set('cua cac nhung mot duoc trong khi voi nay cho den khong the nao hay hoac nhu theo ban sau day thi bao nhieu nhat cung neu sach hinh bai cau dang cho biet hay chon phat bieu dung sai'.split(' '));
+function keyWords(s){ return vnKey(s).split(' ').filter(w=>w && (/^\d+$/.test(w) || (w.length>=3 && !STOPW.has(w)))); }
+function sgkChunks(text){
+  const out=[]; let buf='';
+  const flush=()=>{ if(buf.trim()) out.push(buf.trim()); buf=''; };
+  String(text||'').replace(/\r\n?/g,'\n').split('\n').forEach(line=>{
+    if(!line.trim()){ if(buf && !(/^#/.test(buf) && buf.indexOf('\n')<0)) flush(); return; }
+    if(/^#{1,6}\s/.test(line)) flush();
+    if(buf.length+line.length>800 && !/^#/.test(buf)) flush();
+    buf+=(buf?'\n':'')+line;
+  });
+  flush(); return out;
+}
+function sgkExcerpt(sgk, query, cap){
+  sgk=String(sgk||'').trim(); cap=cap||SGK_EXCERPT_CAP;
+  if(sgk.length<=cap) return sgk;
+  const qw=keyWords(query), qs=new Set(qw);
+  if(!qs.size) return sgk.slice(0,cap);
+  const bi=[]; for(let k=0;k+1<qw.length;k++) bi.push(qw[k]+' '+qw[k+1]);
+  const sc=sgkChunks(sgk).map((c,i)=>{ const w=keyWords(c), ws=new Set(w), nk=' '+w.join(' ')+' '; let s=0;
+    qs.forEach(x=>{ if(ws.has(x)) s++; }); bi.forEach(b=>{ if(nk.includes(' '+b+' ')) s+=1.5; });
+    return {i,c,s}; });
+  const pick=sc.filter(x=>x.s>0).sort((a,b)=>b.s-a.s||a.i-b.i); let used=0; const chosen=[];
+  for(const x of pick){ if(used+x.c.length>cap) continue; chosen.push(x); used+=x.c.length+3; }
+  if(!chosen.length) return sgk.slice(0,cap);
+  return chosen.sort((a,b)=>a.i-b.i).map(x=>x.c).join('\n…\n');
+}
+// SGK gửi cho AI: mỗi bài chỉ các đoạn liên quan đến yêu cầu cần đạt của câu này
+function sgkForSlot(sl, extraQ){
+  const by=new Map();
+  sl.items.forEach(it=>{ const L=yccdLines(it.unit,it.level), y=L.length?L[it.ul%L.length]:''; const e=by.get(it.unit.id)||{u:it.unit,q:[]}; e.q.push(y); by.set(it.unit.id,e); });
+  const cap = by.size>1 ? Math.max(1500, Math.floor(7000/by.size)) : SGK_EXCERPT_CAP;
+  let txt='';
+  by.forEach(e=>{ const sg=(e.u.sgk||'').trim(); if(!sg) return;
+    txt+='\n[Bài "'+e.u.name+'"]\n'+sgkExcerpt(sg, e.u.name+' '+e.q.join(' ')+' '+(extraQ||''), cap)+'\n'; });
+  return {txt};
+}
+function fullSgkOf(sl){ const seen=new Set(); let s=''; sl.items.forEach(it=>{ if(seen.has(it.unit.id)) return; seen.add(it.unit.id); s+='\n'+(it.unit.sgk||''); }); return s.trim(); }
+
+/* --- Kiểm căn cứ AI trích: phải có thật trong SGK đã nạp --- */
+const _sgkIdx=new Map();
+function sgkIndex(full){
+  let r=_sgkIdx.get(full); if(r) return r;
+  const n=vnKey(full), w=n.split(' '), g=new Set();
+  for(let k=0;k+2<w.length;k++) g.add(w[k]+' '+w[k+1]+' '+w[k+2]);
+  r={n:' '+n+' ', g}; if(_sgkIdx.size>20) _sgkIdx.clear(); _sgkIdx.set(full,r); return r;
+}
+function quoteCover(quote, idx){
+  const n=vnKey(quote); if(!n) return 1;
+  if(idx.n.includes(' '+n+' ')) return 1;
+  const w=n.split(' '); if(w.length<4) return idx.n.includes(n)?1:0;
+  let tot=0, hit=0; for(let k=0;k+2<w.length;k++){ tot++; if(idx.g.has(w[k]+' '+w[k+1]+' '+w[k+2])) hit++; }
+  return tot?hit/tot:0;
+}
+function trichIssues(sl,q){
+  const out=[]; if(!q||!q.noidung||!sgkOf(sl)||typeof q.trichdan!=='string') return out;
+  const t=q.trichdan.trim();
+  if(!t){ out.push({sev:'warn',msg:'Thiếu căn cứ SGK (AI chưa trích câu trong sách), cần đối chiếu kỹ'}); return out; }
+  const idx=sgkIndex(fullSgkOf(sl));
+  const lines=t.split(/\n+/).map(x=>x.replace(/^\s*[a-h]\s*[.)]\s*/i,'').replace(/^["“”'‘’]+|["“”'‘’]+$/g,'').trim()).filter(Boolean);
+  const bad=lines.filter(x=>quoteCover(x,idx)<0.7);
+  if(bad.length) out.push({sev:'err',msg:'Căn cứ AI trích không có trong SGK đã nạp (nghi bịa hoặc sai sách): "'+bad[0].slice(0,60)+'..."'});
+  return out;
+}
+
+/* --- Chống trùng câu bằng code (không phụ thuộc AI) --- */
+function gramsOf(w,n){ const g=new Set(); for(let k=0;k+n-1<w.length;k++) g.add(w.slice(k,k+n).join(' ')); return g; }
+function jac(a,b){ if(!a.size||!b.size) return 0; let i=0; a.forEach(x=>{ if(b.has(x)) i++; }); return i/(a.size+b.size-i); }
+const _segMemo=new Map();
+function segInfo(s){
+  let r=_segMemo.get(s); if(r) return r;
+  const w=vnKey(s).split(' ').filter(Boolean);
+  r={w, uni:new Set(keyWords(s)), tri:gramsOf(w,3)}; if(_segMemo.size>800) _segMemo.clear(); _segMemo.set(s,r); return r;
+}
+function segSim(a,b){
+  const A=segInfo(a), B=segInfo(b);
+  if(A.w.length<3||B.w.length<3) return 0;
+  const uni=jac(A.uni,B.uni)*0.85;
+  if(A.w.length<6||B.w.length<6) return uni;
+  return Math.max(jac(A.tri,B.tri), uni);
+}
+function qSegs(sl,q){
+  const nd=(q&&q.noidung)||'';
+  if(sl.format.dang==='nhieu_lua_chon'){ const p=parseMCQ(nd); return [p.stem||nd]; }
+  if(sl.format.dang==='dung_sai'){ const p=parseDS(nd); return [p.lead].concat(Object.values(p.items)).filter(Boolean); }
+  return [nd];
+}
+function ansKey(sl,q){
+  const da=String((q&&q.dapan)||'').trim();
+  if(sl.format.dang==='nhieu_lua_chon'){ const p=parseMCQ(q.noidung||''), L=(da.match(/^[A-D]/)||[''])[0]; return L&&p.opts[L]?vnKey(p.opts[L]):''; }
+  if(sl.format.dang==='tra_loi_ngan') return vnKey(da);
+  return '';
+}
+function dupPair(s1,q1,s2,q2){
+  let best=0;
+  qSegs(s1,q1).forEach(a=>qSegs(s2,q2).forEach(b=>{ const v=segSim(a,b); if(v>best) best=v; }));
+  if(best>=0.5) return {sev:'err',why:'giống '+Math.round(best*100)+'%'};
+  const a1=ansKey(s1,q1), a2=ansKey(s2,q2);
+  if(a1 && a1===a2 && a1.length>=3 && !/^\d+$/.test(a1) && best>=0.3) return {sev:'err',why:'cùng hỏi về một đáp án'};
+  if(s1.format.dang==='nhieu_lua_chon' && s2.format.dang==='nhieu_lua_chon'){
+    const set2=new Set(Object.values(parseMCQ(q2.noidung).opts).map(vnKey));
+    const sh=Object.values(parseMCQ(q1.noidung).opts).map(vnKey).filter(x=>x && set2.has(x)).length;
+    if(sh>=3 && best>=0.3) return {sev:'err',why:'trùng '+sh+'/4 phương án'};
+  }
+  if(q1.trichdan && q2.trichdan){
+    const A=segInfo(q1.trichdan), B=segInfo(q2.trichdan);
+    if(A.w.length>=8 && B.w.length>=8 && jac(A.tri,B.tri)>=0.8) return {sev:'warn',why:'cùng căn cứ SGK'};
+  }
+  return null;
+}
+function dupIssues(sl,q){
+  const out=[]; if(!q||!q.noidung) return out;
+  buildSlots().forEach(o=>{
+    if(o.key===sl.key) return; const q2=state.questions[o.key]; if(!q2||!q2.noidung) return;
+    const r=dupPair(sl,q,o,q2); if(!r) return;
+    out.push({sev:r.sev, msg:(r.sev==='err'?'Trùng ý với Câu ':'Gần giống Câu ')+o.num+' ('+r.why+')', other:o});
+  });
+  if(sl.format.dang==='dung_sai'){
+    const p=parseDS(q.noidung), ks=Object.keys(p.items);
+    for(let a=0;a<ks.length;a++) for(let b=a+1;b<ks.length;b++) if(segSim(p.items[ks[a]],p.items[ks[b]])>=0.5) out.push({sev:'err',msg:'Trùng ý: ý '+ks[a]+') và ý '+ks[b]+') trong cùng câu giống nhau'});
+  }
+  return out;
+}
+
+function buildAiPrompt(sl,extra){
+  const f=sl.format, i=state.info, R=state.aiRules||DEFAULT_AI_RULES;
+  const its=sl.items.map(it=>{ const L=yccdLines(it.unit,it.level); return {topic:it.topic.name, unit:it.unit.name, lv:LEVEL_LABEL[it.level], desc:LEVEL_DESC[it.level], yc:L.length?L[it.ul%L.length]:'(chưa có, bám theo tên bài)'}; });
+  let ctx;
+  if(f.dang==='dung_sai') ctx=its.map((c,k)=>`- ý ${'abcdefgh'[k]}: bài "${c.unit}" (chủ đề "${c.topic}"), mức ${c.lv} - ${c.desc}; yêu cầu cần đạt: ${c.yc}`).join('\n');
+  else { const c=its[0]; ctx=`Chủ đề: "${c.topic}"\nBài (RANH GIỚI PHẠM VI, không được hỏi ngoài bài này): "${c.unit}"\nMức độ: ${c.lv} - ${c.desc}\nYêu cầu cần đạt: ${c.yc}`; }
+  const cut=(t,n)=>t.trim().replace(/\s+/g,' ').slice(0,n);
+  const uids=new Set(sl.items.map(x=>x.unit.id)), tids=new Set(sl.items.map(x=>x.topic.id)), sameU=[], sameT=[];
+  buildSlots().forEach(o=>{
+    const q=state.questions[o.key]; if(o.key===sl.key || !q || !q.noidung) return;
+    if(o.items.some(x=>uids.has(x.unit.id))) sameU.push(cut(q.noidung,130)+(q.dapan?' → '+cut(q.dapan,40):'')+(q.trichdan?' | căn cứ: '+cut(q.trichdan,70):''));
+    else if(o.items.some(x=>tids.has(x.topic.id))) sameT.push(cut(q.noidung,90));
+  });
+  const lst=a=>a.map((x,k)=>`(${k+1}) ${x}`).join('\n');
+  let dup='';
+  if(sameU.length||sameT.length){
+    dup=`\nCÁC CÂU ĐÃ CÓ TRONG ĐỀ. Câu mới phải khác hẳn về khái niệm, căn cứ SGK, số liệu, ví dụ và tình huống, kể cả khi diễn đạt khác (chương trình sẽ tự loại câu giống).`;
+    if(sameU.length) dup+=`\n[Cùng bài]\n`+lst(sameU.slice(-10));
+    if(sameT.length) dup+=`\n[Cùng chủ đề]\n`+lst(sameT.slice(-5));
+  }
+  const book=i.sach||'Kết nối tri thức với cuộc sống';
+  const sg=sgkForSlot(sl), hasSgk=!!sg.txt.trim(), seenU=new Set(), ngoaiList=[];
+  sl.items.forEach(it=>{ const u=it.unit; if(seenU.has(u.id)) return; seenU.add(u.id);
+    (u.ngoai||'').split(/[;\n,]+/).map(x=>x.trim()).filter(Boolean).forEach(x=>{ if(!ngoaiList.includes(x)) ngoaiList.push(x); }); });
+  const sgkTxt = sg.txt
+    ? '\nNỘI DUNG SÁCH GIÁO KHOA (nguồn duy nhất để ra câu và đáp án; dùng đúng thuật ngữ, số liệu, kí hiệu, cách viết ở đây, không thêm kiến thức ngoài đoạn này):'+sg.txt
+    : '\nLƯU Ý: giáo viên chưa cung cấp nội dung sách giáo khoa của bài này. Chỉ dùng kiến thức cơ bản, chắc chắn đúng, nằm trong sách giáo khoa '+i.mon+' lớp '+i.lop+' bộ "'+book+'". Nếu không chắc một thuật ngữ, số liệu hay mốc có đúng trong sách hay không thì KHÔNG dùng. Nếu không thể ra câu chắc chắn đúng khi thiếu số liệu của sách, chỉ trả về ===CANHOI===.';
+  const ngoaiTxt = ngoaiList.length ? '\nTỪ NGỮ/NỘI DUNG CẤM (ngoài chương trình, tuyệt đối không xuất hiện trong câu hỏi, phương án và đáp án): '+ngoaiList.join('; ')+'.' : '';
+  const giaiThich = f.dang!=='tu_luan' && sl.items.some(it=>it.level==='VD'); // chỉ câu Vận dụng mới có giải thích
+  const tail='\n===GIAITHICH===\n';
+  let spec;
+  if(f.dang==='nhieu_lua_chon') spec=`Dạng: trắc nghiệm nhiều lựa chọn. Đáp án đúng BẮT BUỘC là phương án ${targetLetter(sl)}.\n===NOIDUNG===\n(câu dẫn)\nA. ...\nB. ...\nC. ...\nD. ...\n===DAPAN===\n(chỉ một chữ cái)${giaiThich?tail+'(một câu ngắn)':''}`;
+  else if(f.dang==='dung_sai') spec=`Dạng: Đúng/Sai gồm ${sl.items.length} ý, tổng ${vn(slotDiem(sl))} điểm. Viết một tình huống dẫn chung, mỗi ý bám đúng bài và mức độ ghi ở trên; mỗi ý a), b), c), d) tối đa 20 từ.\n===NOIDUNG===\n(tình huống dẫn)\na) ...\nb) ...\n===DAPAN===\na) Đúng; b) Sai; ... (chỉ Đúng hoặc Sai cho từng ý)${giaiThich?tail+'a) (một câu ngắn)\nb) ...':''}`;
+  else if(f.dang==='tra_loi_ngan'){
+    const kd=kieuOf(f);
+    if(kd==='so') spec=`Dạng: trả lời ngắn, học sinh điền đáp án vào chỗ trống.\n===NOIDUNG===\n(câu hỏi có chỗ trống ……, đơn vị ghi sẵn sau chỗ trống)\n===DAPAN===\n(chỉ một con số, ví dụ 36 hoặc 0,5; không kèm chữ hay đơn vị)\nBẮT BUỘC: đáp án là MỘT con số duy nhất. Nếu yêu cầu cần đạt không thể ra số một cách tự nhiên (bài thuần khái niệm), KHÔNG ép ra số và KHÔNG hỏi đếm danh sách; hãy trả về ===CANHOI=== đề nghị giáo viên chuyển hình thức này sang kiểu "Điền chữ".${giaiThich?tail+'(một câu ngắn)':''}`;
+    else if(kd==='chu') spec=`Dạng: trả lời ngắn, học sinh điền MỘT TỪ hoặc cụm từ vào chỗ trống.\n===NOIDUNG===\n(câu hỏi hoặc câu có chỗ trống ……)\n===DAPAN===\n(chỉ một từ hoặc cụm từ ngắn, tối đa 5 từ, ví dụ: quang hợp; không phải số)\nBẮT BUỘC: đáp án là chữ, không phải số, chỉ có một đáp án đúng duy nhất và bám đúng yêu cầu cần đạt.${giaiThich?tail+'(một câu ngắn)':''}`;
+    else spec=`Dạng: trả lời ngắn, học sinh điền đáp án vào chỗ trống; đáp án là MỘT con số HOẶC một từ/cụm từ ngắn.\n===NOIDUNG===\n(câu hỏi có chỗ trống ……; nếu đáp án là số thì ghi sẵn đơn vị sau chỗ trống)\n===DAPAN===\n(chỉ một con số, hoặc một từ/cụm từ tối đa 5 từ; không kèm giải thích)\nBẮT BUỘC: chọn loại đáp án phù hợp nhất với yêu cầu cần đạt, chỉ có một đáp án đúng duy nhất.${giaiThich?tail+'(một câu ngắn)':''}`;
+  }
+  else if(f.dang==='tu_luan') spec=`Dạng: tự luận, câu này ${vn(slotDiem(sl))} điểm.\n===NOIDUNG===\n(đề bài)\n===DAPAN===\nmỗi ý một dòng: nội dung ngắn (x,xđ). Tổng các ý đúng bằng ${vn(slotDiem(sl))} điểm.`;
+  else spec=`Dạng: ${f.name}.\n===NOIDUNG===\n(nội dung)\n===DAPAN===\n(đáp án)`;
+  const rulesDang=(f.dang==='tra_loi_ngan' && TLN_RULES[kieuOf(f)] && R.tra_loi_ngan===DEFAULT_AI_RULES.tra_loi_ngan) ? TLN_RULES[kieuOf(f)] : (R[f.dang]||'');
+  const trichGuide = !hasSgk ? '' : (f.dang==='dung_sai'
+    ? '\nCĂN CỨ: sau phần đáp án, thêm dòng ===TRICHDAN=== rồi với MỖI ý viết một dòng "a) ...": chép NGUYÊN VĂN một câu hoặc cụm (tối đa 30 từ) có thật trong NỘI DUNG SÁCH GIÁO KHOA ở trên làm căn cứ cho đáp án của ý đó. Không chép được thì không ra ý đó.'
+    : '\nCĂN CỨ: sau phần đáp án, thêm dòng ===TRICHDAN=== rồi chép NGUYÊN VĂN một câu hoặc cụm (tối đa 30 từ) có thật trong NỘI DUNG SÁCH GIÁO KHOA ở trên làm căn cứ cho đáp án; không viết lại bằng lời của em. Không chép được căn cứ thì không ra câu đó, trả về ===CANHOI===.');
+  const hinhPara=`HÌNH ẢNH: bạn không thể tự chèn hình. Nếu câu cần hình (đồ thị, sơ đồ, mạch điện, thí nghiệm, tia sáng, mô hình...), hãy viết câu hỏi dựa vào hình (ví dụ "Quan sát hình bên...") và thêm dòng ===HINH=== kèm mô tả thật ngắn hình cần có (vẽ gì, ghi chú gì). Nếu không cần hình, ghi ===HINH=== rồi chữ "Không".`;
+  const fin='Chỉ trả về đúng định dạng có các dòng ===NOIDUNG===, ===DAPAN==='+(giaiThich?', ===GIAITHICH===':'')+(hasSgk?', ===TRICHDAN===':'')+', ===HINH===, không thêm chữ nào khác. Nếu thiếu thông tin để ra câu đúng, chỉ trả về dòng ===CANHOI=== kèm một câu hỏi ngắn cho giáo viên, không tự đoán.';
+  // Phần cố định (quy tắc) đặt trước, phần thay đổi theo từng câu đặt sau
+  return `Bạn là giáo viên môn ${i.mon} lớp ${i.lop}, dạy theo sách giáo khoa bộ "${book}", soạn 1 câu hỏi cho đề "${i.ten}" (${i.loai}).\n\nQUY TẮC VIẾT (bắt buộc):\n${R.chung||''}\n${R.chinh_xac||''}\n${rulesDang}\n\n${hinhPara}\n\n=== CÂU CẦN SOẠN ===\n${spec}\n\n${ctx}\n\nCâu hỏi phải kiểm tra ĐÚNG nội dung và hành động nêu trong "yêu cầu cần đạt" ở trên; không hỏi kiến thức nằm ngoài yêu cầu đó.\n${sgkTxt}${ngoaiTxt}${dup}${extra||''}${giaiThich||f.dang==='tu_luan'?'':'\nCâu này không ở mức Vận dụng nên KHÔNG viết ===GIAITHICH===.'}${trichGuide}\n\n${fin}`;
+}
+function parseAiText(text){
+  const t=String(text||'').replace(/```[a-z]*|```/gi,'').replace(/\*\*/g,'').trim();
+  const ch=t.match(/===CANHOI===([\s\S]*)/); if(ch) return {canhoi:ch[1].trim()};
+  const g=k=>{ const m=t.match(new RegExp('==='+k+'===([\\s\\S]*?)(?====[A-Z]+===|$)')); return m?m[1].trim():''; };
+  return {noidung:g('NOIDUNG'), dapan:g('DAPAN'), giaithich:g('GIAITHICH'), trichdan:g('TRICHDAN'), hinh:g('HINH')};
+}
+function postProcess(sl,r){
+  const f=sl.format; r.noidung=r.noidung.replace(/\n{3,}/g,'\n\n');
+  if(f.dang==='nhieu_lua_chon'){
+    const p=parseMCQ(r.noidung);
+    if(['A','B','C','D'].every(L=>p.opts[L])){
+      const a=(r.dapan.match(/[A-D]/)||[''])[0], tg=targetLetter(sl);
+      if(a && a!==tg){ const t=p.opts[a]; p.opts[a]=p.opts[tg]; p.opts[tg]=t; }
+      if(a){ r.noidung=canonMCQ(p.stem,p.opts); r.dapan=tg; }
+    }
+  } else if(f.dang==='dung_sai'){
+    const rr=parseDSAns(r.dapan), n=sl.items.length;
+    if(Object.keys(rr).length>=n) r.dapan=Array.from({length:n},(_,k)=>{ const L='abcdefgh'[k]; return L+') '+(rr[L]==='Đ'?'Đúng':'Sai'); }).join('; ');
+    const p=parseDS(r.noidung);
+    if(Object.keys(p.items).length===n) r.noidung=(p.lead?p.lead+'\n':'')+Object.keys(p.items).map(k=>k+') '+p.items[k]).join('\n');
+  } else if(f.dang==='tra_loi_ngan'){
+    r.dapan=r.dapan.replace(/^(đáp án|kết quả)\s*[:=]\s*/i,'').replace(/[.\s]+$/,'');
+    if(kieuOf(f)==='so'){ const m=r.dapan.match(/^([-+]?\d+(?:[.,]\d+)?)\s*([^\d]{1,15})$/); if(m) r.dapan=m[1]; }
+    r.dapan=r.dapan.replace(/^["“”'‘’]+|["“”'‘’]+$/g,'').trim();
+  }
+  return r;
+}
+const RETRY_WARN=/dài hơn|chỉ đếm số lượng|chưa phải một con số|chưa phải từ hoặc cụm từ|Câu dẫn dài|Câu hỏi dài|Tình huống dẫn dài|Thiếu căn cứ|Gần giống Câu/;
+async function verifyQuestion(sl,r){
+  const i=state.info, book=i.sach||'Kết nối tri thức với cuộc sống';
+  const its=sl.items.map(it=>{ const L=yccdLines(it.unit,it.level); return '- Bài "'+it.unit.name+'", mức '+LEVEL_LABEL[it.level]+', yêu cầu cần đạt: '+(L.length?L[it.ul%L.length]:'(chưa có)'); }).join('\n');
+  const sgk=sgkForSlot(sl, r.trichdan||'').txt;
+  const ngoai=[]; sl.items.forEach(it=>(it.unit.ngoai||'').split(/[;\n,]+/).map(x=>x.trim()).filter(Boolean).forEach(x=>{ if(!ngoai.includes(x)) ngoai.push(x); }));
+  const p='Bạn là thanh tra chuyên môn môn '+i.mon+' lớp '+i.lop+', sách giáo khoa bộ "'+book+'". Hãy THẨM ĐỊNH nghiêm khắc câu hỏi dưới đây: tự giải câu hỏi trước, rồi so với đáp án đã cho.\n\nYêu cầu cần đạt:\n'+its+'\n'
+   +(sgk?'\nNỘI DUNG SÁCH GIÁO KHOA:'+sgk:'\n(Không có trích đoạn SGK; đối chiếu bằng kiến thức chuẩn của chương trình lớp '+i.lop+'.)')
+   +(ngoai.length?'\nNội dung ngoài chương trình, không được xuất hiện: '+ngoai.join('; ')+'.\n':'')
+   +'\nCÂU HỎI:\n'+r.noidung+'\n\nĐÁP ÁN:\n'+r.dapan+(r.trichdan?'\n\nCĂN CỨ AI TRÍCH TỪ SGK:\n'+r.trichdan:'')+'\n\nTiêu chí (chỉ cần MỘT tiêu chí không đạt là kết luận LOI):\n1) Đáp án đúng về khoa học và đúng như sách giáo khoa.\n2) Chỉ có một đáp án đúng, không có phương án nào khác cũng đúng.\n3) Thuật ngữ, kí hiệu, số liệu, phương trình, chiều phản ứng đúng như sách; không có kiến thức ngoài chương trình lớp '+i.lop+'.\n4) Câu hỏi đúng nội dung của yêu cầu cần đạt và đúng mức độ nhận thức.\n5) Câu rõ nghĩa, không gây hiểu nhầm; phương án nhiễu (nếu có) hợp lý, không phi lý.\n6) Tự luận hoặc Đúng–Sai: đáp án và thang điểm từng ý đúng.\n\nChỉ trả về đúng 2 dòng:\n===KETLUAN=== DAT hoặc LOI\n===LYDO=== (nếu LOI: nêu lỗi cụ thể, tối đa 30 từ; nếu DAT: để trống)';
+  const t=await callWithRetry(p,null,0.1,'kiem');
+  const m=String(t).match(/===KETLUAN===\s*(DAT|LOI)/i); if(!m) return null;
+  const ly=((String(t).match(/===LYDO===([\s\S]*)/)||['',''])[1]||'').trim();
+  return {ok:/DAT/i.test(m[1]), lydo:ly||'không rõ lý do'};
+}
+function needVerify(sl){
+  if(state.info.kiemPhamVi!=='tietkiem') return true;
+  return ['tra_loi_ngan','dung_sai','tu_luan'].includes(sl.format.dang);
+}
+async function genSlot(sl,opt){
+  const miss=missingYccd(sl);
+  if(miss.length) return {thieuYccd:true, canhoi:'Chưa có yêu cầu cần đạt cho bài '+miss.join('; ')+'. Thầy nhập yêu cầu cần đạt ở Tab 1 (Chủ đề, bài và phân bổ) rồi bấm soạn lại. Câu hỏi chỉ được soạn khi đã có yêu cầu cần đạt.'};
+  let base='', best=null;
+  if(opt && opt.old && opt.old.noidung){
+    const cut=(t,n)=>String(t||'').trim().replace(/\s+/g,' ').slice(0,n);
+    base='\nCÂU CŨ MÀ GIÁO VIÊN KHÔNG ƯNG Ý (tuyệt đối không lặp lại, không chỉ diễn đạt lại): '+cut(opt.old.noidung,400)+(opt.old.dapan?'\nĐáp án câu cũ: '+cut(opt.old.dapan,60):'')+'\nHãy viết một câu HOÀN TOÀN KHÁC: vẫn đúng bài, đúng mức độ, đúng yêu cầu cần đạt nhưng đổi ý nhỏ cần hỏi, căn cứ trong SGK, tình huống, số liệu và cách đặt câu hỏi.';
+  }
+  let extra=base;
+  // Tối đa 2 lượt (soạn + sửa); chỉ thêm lượt thứ 3 khi câu vẫn bị TRÙNG với câu khác
+  for(let at=0; at<3; at++){
+    const r=parseAiText(await callWithRetry(buildAiPrompt(sl,extra),null,(at===0&&opt&&opt.temp)||null,'soan'));
+    if(r.canhoi) return r;
+    postProcess(sl,r);
+    const iss=validateQ(sl,r), bad=iss.filter(x=>x.sev==='err' || (x.sev==='warn' && RETRY_WARN.test(x.msg)));
+    if(opt && opt.old && opt.old.noidung && r.noidung){ const rp=dupPair(sl,r,sl,opt.old); if(rp) bad.push({sev:'err',msg:'Giống câu cũ ('+rp.why+')',other:sl}); }
+    if(!bad.length && state.info.kiemChung!==false && needVerify(sl)){
+      let v=null; try{ v=await verifyQuestion(sl,r); }catch(e){ v=null; }
+      if(v){ if(v.ok) r.kiem='ok'; else { r.kiem='loi:'+v.lydo; bad.push({sev:'err',msg:'Thẩm định phát hiện lỗi: '+v.lydo}); } }
+    }
+    if(!bad.length) return r;
+    if(r.noidung && (!best || bad.length<best.n)) best={r,n:bad.length};
+    const dupBad=bad.filter(x=>x.other);
+    if(at===2 || (at===1 && !dupBad.length)) return best?best.r:r;
+    let hint='';
+    if(bad.some(x=>/con số/.test(x.msg))) hint+=' Đáp án chỉ được là MỘT con số, không chữ, không đơn vị.';
+    if(bad.some(x=>/từ hoặc cụm từ/.test(x.msg))) hint+=' Đáp án phải là một từ hoặc cụm từ ngắn, không phải số.';
+    if(bad.some(x=>/Đáp án dài hơn/.test(x.msg))) hint+=' Rút đáp án còn tối đa 5 từ.';
+    if(bad.some(x=>/(Ý .*dài hơn|dài \()/.test(x.msg))) hint+=' Rút ngắn nội dung, mỗi ý dưới 20 từ.';
+    if(bad.some(x=>/Thẩm định/.test(x.msg))) hint+=' Sửa đúng lỗi thẩm định đã chỉ ra, đối chiếu lại nội dung sách giáo khoa; nếu không chắc thì trả về ===CANHOI===.';
+    if(bad.some(x=>/ngoài chương trình/.test(x.msg))) hint+=' Tuyệt đối không dùng các từ ngữ cấm.';
+    if(bad.some(x=>/nhiều đáp án đúng/.test(x.msg))) hint+=' Hỏi một giá trị cố định có trong sách giáo khoa.';
+    if(bad.some(x=>/Căn cứ AI trích|Thiếu căn cứ/.test(x.msg))) hint+=' Phần ===TRICHDAN=== phải chép NGUYÊN VĂN từ đoạn sách đã cho, không tự viết lại.';
+    let dupTxt='';
+    if(dupBad.length){
+      hint+=' Câu này TRÙNG với câu đã có: phải viết câu HOÀN TOÀN KHÁC (khác khái niệm, khác căn cứ SGK, khác tình huống), lấy một ý khác trong yêu cầu cần đạt.';
+      dupTxt='\nCÁC CÂU BỊ TRÙNG (không được hỏi lại):\n'+dupBad.map(x=>'- Câu '+x.other.num+': '+String((state.questions[x.other.key]||{}).noidung||'').replace(/\s+/g,' ').slice(0,160)).join('\n');
+    }
+    const draft = (r.noidung && !dupBad.length) ? '\nBẢN NHÁP LẦN TRƯỚC (chỉ sửa đúng chỗ lỗi, giữ nguyên phần đúng):\n'+r.noidung+'\nĐáp án nháp: '+r.dapan : '';
+    extra=base+'\nLẦN TRƯỚC BỊ LỖI: '+bad.map(x=>x.msg).join('; ')+'. Hãy sửa lại đúng định dạng và vẫn bám đúng yêu cầu cần đạt đã nêu.'+hint+dupTxt+draft;
+  }
+}
+const PREV_FIELDS=['noidung','dapan','giaithich','trichdan','kiem','hinhMoTa','sig','ysig','hinh'];
+function applyResult(sl,r,redo){
+  if(r.canhoi){ setQuestion(sl.key,'canhoi',r.canhoi); return false; }
+  if(redo){
+    const o=state.questions[sl.key];
+    if(o && o.noidung){ const pv={}; PREV_FIELDS.forEach(k=>{ if(o[k]!==undefined) pv[k]=o[k]; }); o.prev=pv; delete o.hinh; }
+  }
+  ['noidung','dapan','giaithich'].forEach(k=>setQuestion(sl.key,k,r[k]||''));
+  setQuestion(sl.key,'trichdan',r.trichdan||'');
+  setQuestion(sl.key,'kiem',r.kiem||'');
+  setQuestion(sl.key,'canhoi',''); setQuestion(sl.key,'sig',slotSig(sl)); setQuestion(sl.key,'ysig',yccdSigOf(sl));
+  setQuestion(sl.key,'hinhMoTa', /^\s*(không|khong)\b/i.test(r.hinh||'') ? '' : String(r.hinh||'').trim());
+  return true;
+}
+async function callClaudeForQuestion(prompt,temp,mult){
+  const apiKey = getApiKey();
+  if(!apiKey) throw new Error("Chưa nhập Gemini API key. Vào Tab 1 → nhập key miễn phí từ aistudio.google.com");
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: (temp==null?0.5:temp), maxOutputTokens: 4096*(mult||1) }
+    })
+  });
+  if(!response.ok){
+    const err = await response.json().catch(()=>({}));
+    const msg = err?.error?.message || response.statusText;
+    if(response.status === 400 || response.status === 403)
+      throw new Error("API key không hợp lệ hoặc chưa bật quyền. Kiểm tra lại trong Tab 1. (" + msg + ")");
+    if(response.status === 404)
+      throw new Error("Model AI không tồn tại/đã ngừng hỗ trợ (404). (" + msg + ")");
+    if(response.status === 429){
+      const e = new Error("RATE_LIMIT");
+      e.isRateLimit = true;
+      throw e;
+    }
+    throw new Error("Lỗi Gemini API (" + response.status + "): " + msg);
+  }
+  const data = await response.json();
+  const cand = data?.candidates?.[0];
+  const text = cand?.content?.parts?.[0]?.text || '';
+  if(!text){
+    const reason = cand?.finishReason || 'không rõ';
+    throw new Error("AI không trả về nội dung (finishReason: " + reason + "). Có thể do bộ lọc an toàn — thử đổi lại nội dung/chủ đề.");
+  }
+  if(cand?.finishReason === 'MAX_TOKENS'){
+    const e = new Error("Nội dung bị cắt cụt do vượt giới hạn độ dài (MAX_TOKENS). Đang thử lại...");
+    e.isTruncated = true;
+    throw e;
+  }
+  return text;
+}
+let aiGenerating = false;
+let activeKeyIndex = 0;
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+async function callServerOnce(prompt,temp,mult){
+  let res;
+  try{
+    res = await fbFn.httpsCallable('soanAI',{timeout:120000})({prompt, temp: (temp==null?0.5:temp), mult: mult||1});
+  }catch(e){
+    const ma = e && e.details && e.details.ma;
+    const err = new Error((e && e.message) || 'Lỗi AI');
+    if(ma==='RATE_LIMIT') err.isRateLimit = true;
+    if(['HET_LUOT','HET_NGAY','HET_HAN','KHONG_PHAI_GOI_AI','KHONG_CO_QUYEN'].includes(ma)) err.serverStop = ma;
+    throw err;
+  }
+  const d = res.data || {};
+  if(typeof d.luotConLai === 'number'){ luotConLai = d.luotConLai; renderQuotaBadge(); }
+  if(d.finishReason === 'MAX_TOKENS'){ // máy chủ không trả văn bản khi bị cắt, nên xét trước kiểm tra rỗng
+    const e = new Error('Nội dung bị cắt cụt do vượt giới hạn độ dài. Đang thử lại...');
+    e.isTruncated = true; throw e;
+  }
+  if(!d.text) throw new Error('AI không trả về nội dung (finishReason: ' + (d.finishReason||'không rõ') + '). Thử đổi lại nội dung/chủ đề.');
+  return d.text;
+}
+async function callServerWithRetry(prompt,temp,role){
+  let mult = 1;
+  for(let attempt=0; attempt<4; attempt++){
+    const last = attempt === 3;
+    try{
+      return await callServerOnce(prompt,temp,mult);
+    }catch(e){
+      if(e.isRateLimit && !last){ await sleep(15000*(attempt+1)); continue; }
+      if(e.isTruncated && !last){ mult = Math.min(mult*2,4); continue; }
+      if(e.serverStop === 'HET_NGAY') throw new Error('Hôm nay thầy đã dùng hết số lượt AI tối đa trong ngày. Mai dùng tiếp, hoặc nhập key Gemini riêng ở Tab 1 để soạn tiếp ngay.');
+      if(e.serverStop === 'HET_LUOT'){ luotConLai = 0; renderQuotaBadge(); return await callWithRetry(prompt,null,temp,role); }
+      if(e.serverStop === 'HET_HAN') throw new Error('Tài khoản đã hết hạn sử dụng. Vui lòng liên hệ để gia hạn.');
+      if(e.isRateLimit) throw new Error('Máy chủ AI đang quá tải, đợi 1 phút rồi thử lại.');
+      throw e;
+    }
+  }
+}
+async function callWithRetry(prompt, maxAttempts, temp, role){
+  if(useServerAI()) return await callServerWithRetry(prompt,temp,role);
+  if(licenseGoi === 'ai' && !getApiKeys().length && !getOpenAIKeys().length)
+    throw new Error('Đã hết lượt AI sẵn. Nhập key Gemini miễn phí ở Tab 1 để soạn tiếp, hoặc liên hệ để mua thêm lượt.');
+  if(getProvider(role||'soan')==='openai') return await callOpenAIWithRetry(prompt,temp);
+  maxAttempts = maxAttempts || (getApiKeys().length + 3);
+  const backoffs = [15000, 30000, 45000];
+  let mult=1;
+  for(let attempt=0; attempt<maxAttempts; attempt++){
+    try{
+      return await callClaudeForQuestion(prompt,temp,mult);
+    }catch(e){
+      const isLast = attempt === maxAttempts-1;
+      if(e.isRateLimit){
+        if(rotateApiKey()){
+          toast("⚠ Key hiện tại hết hạn mức — tự chuyển sang key kế tiếp...");
+          continue; // thử ngay với key mới, không tính vào số lần chờ
+        }
+        if(!isLast){
+          await sleep(backoffs[attempt]||45000);
+          activeKeyIndex = 0; // hết key dự phòng, quay lại key đầu sau khi chờ
+          continue;
+        }
+        throw new Error("Đã vượt giới hạn miễn phí của Gemini (429) trên tất cả các key. Vui lòng đợi 1 phút hoặc thêm key mới rồi thử lại.");
+      }
+      if(e.isTruncated && !isLast){
+        mult=Math.min(mult*2,4); await sleep(500);
+        continue;
+      }
+      throw e;
+    }
+  }
+}
+function restorePrev(key){
+  const q=state.questions[key]; if(!q||!q.prev){ toast('Không có câu cũ để lấy lại.'); return; }
+  const cur={}; PREV_FIELDS.forEach(k=>{ if(q[k]!==undefined) cur[k]=q[k]; });
+  PREV_FIELDS.forEach(k=>{ if(q.prev[k]===undefined) delete q[k]; else q[k]=q.prev[k]; });
+  q.canhoi=''; q.prev=cur; render(); toast('↩ Đã đổi lại câu trước đó. Bấm lần nữa để quay lại câu vừa soạn.');
+}
+async function aiGenOne(key){
+  if(aiGenerating){ toast("Đang soạn câu khác, vui lòng chờ..."); return; }
+  const sl=buildSlots().find(x=>x.key===key);
+  if(!sl){ toast("Không tìm thấy câu hỏi này."); return; }
+  const q0=state.questions[key], redo=!!(q0&&q0.noidung);
+  aiGenerating=true; toast(redo?"🔄 Đang soạn câu khác...":"🤖 Đang soạn câu hỏi...");
+  try{ const r=await genSlot(sl, redo?{old:{noidung:q0.noidung,dapan:q0.dapan},temp:0.9}:null), ok=applyResult(sl,r,redo); toast(ok?(redo?"✓ Đã soạn câu khác. Không ưng thì bấm ↩ Lấy lại câu cũ.":"✓ Đã soạn xong."):(r.thieuYccd?"⚠ Bài này chưa có yêu cầu cần đạt, hãy nhập ở Tab 1 rồi soạn lại.":"🤖 AI cần thầy trả lời thêm (xem dưới câu hỏi).")); }
+  catch(e){ toast("Lỗi AI: "+e.message); }
+  finally{ aiGenerating=false; render(); }
+}
+async function aiGenAll(onlyEmpty){
+  if(aiGenerating){ toast("Đang xử lý, vui lòng chờ..."); return; }
+  const all=buildSlots().filter(sl=>{ if(!onlyEmpty) return true; const q=state.questions[sl.key]; return !q||!q.noidung; });
+  const slots=all.filter(sl=>!missingYccd(sl).length), blocked=all.filter(sl=>missingYccd(sl).length);
+  if(blocked.length){
+    const names=[]; blocked.forEach(sl=>missingYccd(sl).forEach(n=>{ if(!names.includes(n)) names.push(n); }));
+    blocked.forEach(sl=>setQuestion(sl.key,'canhoi','Chưa có yêu cầu cần đạt cho bài '+missingYccd(sl).join('; ')+'. Nhập ở Tab 1 rồi soạn lại.'));
+    alert('Có '+blocked.length+' câu CHƯA soạn vì chưa có yêu cầu cần đạt:\n- '+names.join('\n- ')+'\n\nThầy nhập yêu cầu cần đạt ở Tab 1 (Chủ đề, bài và phân bổ) rồi soạn lại các câu này.'+(slots.length?'\nCác câu còn lại vẫn được soạn bình thường.':''));
+  }
+  if(!slots.length){ toast(blocked.length?"Không có câu nào soạn được vì thiếu yêu cầu cần đạt.":"Không có câu nào cần soạn."); render(); return; }
+  if(!confirm(`Soạn tự động ${slots.length} câu (kèm đáp án) bằng AI?\nMất khoảng ${Math.ceil(slots.length*(state.info.kiemChung===false?7:14)/60)} phút (cách nhau 7 giây/câu để tránh vượt giới hạn API), đừng tắt trang.`)) return;
+  aiGenerating=true; let done=0, loi=0, hoi=0;
+  for(const sl of slots){
+    try{ if(!applyResult(sl, await genSlot(sl))) hoi++; }catch(e){ loi++; }
+    done++; toast(`🤖 Đã soạn ${done}/${slots.length} câu...`);
+    if(done<slots.length) await sleep(7000);
+  }
+  // Quét trùng lần cuối: câu nào còn trùng thì soạn lại
+  for(const sl of buildSlots()){
+    const q=state.questions[sl.key]; if(!q||!q.noidung) continue;
+    if(dupIssues(sl,q).some(x=>x.sev==='err')){
+      toast('🤖 Đang soạn lại câu '+sl.num+' vì trùng ý...'); await sleep(7000);
+      try{ applyResult(sl, await genSlot(sl)); }catch(e){}
+    }
+  }
+  aiGenerating=false;
+  if(!failedSlots().length){ state.reallocRounds=0; state.badBuckets={}; }
+  render();
+  toast(`✓ Hoàn tất ${done} câu`+(loi?`, ${loi} câu lỗi (soạn lại riêng)`:'')+(hoi?`, ${hoi} câu AI cần hỏi lại`:'')+(blocked.length?`, ${blocked.length} câu bỏ qua vì thiếu yêu cầu cần đạt`:'')+'.'+(hoi?' Bấm "🔁 Phân bổ lại các câu lỗi" để chuyển các câu đó sang bài khác.':''));
+}
+
+/* ---------------- TAB 7: KIỂM TRA TỔNG THỂ ---------------- */
+function runChecks(){
+  const R=[], add=(sev,g,t)=>R.push({sev,g,t}), i=state.info, total=tongDiemDe(), slots=buildSlots();
+  add(Math.abs(total-10)<0.01?'ok':'warn','Cấu hình','Tổng điểm của đề là '+vn(total)+(Math.abs(total-10)<0.01?'':' (thông thường là 10,0)'));
+  { const ns=[]; allUnits().forEach(({unit})=>{ if(!unit.khongKT && !(unit.sgk||'').trim()) ns.push(unit.name); });
+    if(ns.length) add('warn','Độ chính xác','Chưa nhập nội dung SGK cho '+ns.length+' bài ('+ns.slice(0,4).join('; ')+(ns.length>4?'...':'')+'): AI chỉ dựa vào trí nhớ nên dễ sai so với sách.'); }
+  { const nk=slots.filter(sl=>{ const q=state.questions[sl.key]; return q&&(q.kiem||'').startsWith('loi:'); }).length;
+    if(nk) add('warn','Độ chính xác',nk+' câu bị AI thẩm định nghi ngờ sai, cần xem lại hoặc soạn lại.'); }
+  const tl=(+i.tyLeNB||0)+(+i.tyLeTH||0)+(+i.tyLeVD||0);
+  add(Math.abs(tl-100)<0.01?'ok':'err','Cấu hình','Tổng tỉ lệ mức độ mục tiêu là '+tl+'%'+(Math.abs(tl-100)<0.01?'':' (phải bằng 100%)'));
+  [['truong','trường'],['gv','họ tên giáo viên'],['ngay','ngày kiểm tra'],['namHoc','năm học']].forEach(([k,n])=>{ if(!String(i[k]||'').trim()) add('warn','Cấu hình','Chưa nhập '+n+' (file Word sẽ để trống phần này)'); });
+  state.formats.forEach(f=>{ if(f.kind==='dung_sai'){ const b=dsBangOf(f), dc=diemMoiCauThuc(f); if(Math.abs(b[b.length-1]-dc)>0.001) add('err','Cấu hình','Bảng chấm Đúng–Sai: đúng đủ các ý phải bằng '+vn(dc)+' điểm'); } });
+  state.topics.forEach(t=>{ if(!t.units.length) add('err','Phân bổ','Chủ đề "'+t.name+'" chưa có bài nào'); });
+  let okAlloc=true;
+  state.formats.forEach(f=>{ const da=sumAllocForFormat(f.id), mt=soDonVi(f); if(da!==mt){ okAlloc=false; add('err','Phân bổ',f.name+': đã phân bổ '+da+(f.kind==='dung_sai'?' ý':' câu')+', cần '+mt); } });
+  if(okAlloc) add('ok','Phân bổ','Số câu (số ý) của từng hình thức khớp với phần thiết lập');
+  const names={NB:'Biết',TH:'Hiểu',VD:'Vận dụng'}, tg={NB:+i.tyLeNB,TH:+i.tyLeTH,VD:+i.tyLeVD}; let okLv=true;
+  LEVELS.forEach(l=>{ const pc=total?sumDiemForLevel(l)/total*100:0; if(Math.abs(pc-tg[l])>2){ okLv=false; add('warn','Phân bổ','Mức '+names[l]+' đạt '+pctStr(pc)+'%, mục tiêu '+tg[l]+'%'); } });
+  if(okLv) add('ok','Phân bổ','Tỉ lệ Biết / Hiểu / Vận dụng đạt đúng mục tiêu');
+  allUnits().forEach(({unit})=>LEVELS.forEach(l=>{
+    if(state.formats.some(f=>(unit.levels[l].alloc[f.id]||0)>0) && !hasYccd(unit,l)) add('err','Phân bổ','Bài "'+unit.name+'", mức '+names[l]+': có câu hỏi nhưng chưa nhập yêu cầu cần đạt (phải nhập trước rồi mới soạn câu hỏi)');
+    state.formats.forEach(f=>{ if((unit.levels[l].alloc[f.id]||0)>0 && !f.choLevels.includes(l)) add('err','Phân bổ','Bài "'+unit.name+'": '+f.name+' không áp dụng cho mức '+names[l]); });
+  }));
+  slots.filter(x=>x.format.kind==='dung_sai').forEach(x=>{
+    const per=+x.format.soYMoiCau||1;
+    if(x.items.length<per) add('err','Phân bổ','Câu '+x.num+' (Đúng–Sai) chỉ có '+x.items.length+'/'+per+' ý');
+    if(new Set(x.items.map(y=>y.topic.id)).size>1) add('warn','Phân bổ','Câu '+x.num+' (Đúng–Sai) gồm ý của nhiều chủ đề, khó viết một tình huống dẫn chung');
+  });
+  const empty=[]; let qErr=0;
+  slots.forEach(x=>{
+    const q=state.questions[x.key];
+    if(!q||!q.noidung){ empty.push(x.num); if(q&&q.canhoi){ add('err','Câu hỏi','Câu '+x.num+': AI hỏi lại — '+q.canhoi); qErr++; } return; }
+    validateQ(x,q).forEach(v=>{ add(v.sev,'Câu hỏi','Câu '+x.num+': '+v.msg); if(v.sev==='err') qErr++; });
+    if(x.format.kind==='dung_sai' && q.sig && q.sig!==slotSig(x)) add('warn','Câu hỏi','Câu '+x.num+': phân bổ ý đã đổi sau khi soạn, nên soạn lại');
+    if(q.ysig!==undefined && !missingYccd(x).length && q.ysig!==yccdSigOf(x)) add('warn','Câu hỏi','Câu '+x.num+': yêu cầu cần đạt đã đổi sau khi soạn, nên soạn lại');
+    if(q.hinhMoTa && !q.hinh) add('warn','Câu hỏi','Câu '+x.num+': cần chèn hình ('+q.hinhMoTa+')');
+    if(Array.from(q.noidung.matchAll(/(^|[^\p{L}\p{N}])((?:(?:Na|Ca|Cl|Fe|Mg|Cu|Zn|Al|H|C|O|N|S|K|P)\d*)+)(?![\p{L}\p{N}])/gu)).some(m=>/\d/.test(m[2]))) add('warn','Câu hỏi','Câu '+x.num+': công thức nên dùng chỉ số dưới (H₂O, CO₂)');
+  });
+  if(empty.length){ add('err','Câu hỏi',empty.length+' câu chưa có nội dung: Câu '+empty.join(', ')); qErr+=empty.length; }
+  if(slots.length && !qErr) add('ok','Câu hỏi','Cả '+slots.length+' câu đều có nội dung và đáp án hợp lệ');
+  const cnt={A:0,B:0,C:0,D:0}; let nm=0;
+  slots.filter(x=>x.format.dang==='nhieu_lua_chon').forEach(x=>{ const a=((state.questions[x.key]||{}).dapan||'').trim(); if(cnt[a]!==undefined){ cnt[a]++; nm++; } });
+  if(nm>=4){ const v=Object.values(cnt); if(Math.max(...v)-Math.min(...v)>2) add('warn','Câu hỏi','Đáp án trắc nghiệm phân bố lệch: A='+cnt.A+', B='+cnt.B+', C='+cnt.C+', D='+cnt.D); else add('ok','Câu hỏi','Đáp án trắc nghiệm phân bố đều: A='+cnt.A+', B='+cnt.B+', C='+cnt.C+', D='+cnt.D); }
+  const sum=slots.reduce((a,x)=>a+slotDiem(x),0);
+  add(Math.abs(sum-total)<0.01?'ok':'err','Đề và ma trận','Tổng điểm các câu trong đề là '+vn(sum)+', ma trận là '+vn(total));
+  return R;
+}
+function viewCheck(){
+  const R=runChecks(), e=R.filter(x=>x.sev==='err').length, w=R.filter(x=>x.sev==='warn').length;
+  const ic={err:'✖',warn:'⚠',ok:'✔'}, col={err:'var(--bad,#ff6b6b)',warn:'var(--accent2,#f5c542)',ok:'var(--good,#4cd08a)'};
+  let h=`<div class="card"><h2>Kiểm tra tổng thể trước khi xuất</h2><p style="margin-top:6px;"><span class="pill ${e?'bad':'ok'}">${e} lỗi cần sửa</span> <span class="pill">${w} mục nên xem lại</span></p>
+  <p class="muted" style="margin-top:8px;">${e?'Sửa hết các lỗi ✖ rồi hãy xuất file Word.':'Không còn lỗi. Thầy xem lại các mục ⚠ (nếu có) rồi xuất file Word.'}</p></div>`;
+  ['Cấu hình','Phân bổ','Câu hỏi','Đề và ma trận'].forEach(g=>{
+    const L=R.filter(x=>x.g===g); if(!L.length) return;
+    h+=`<div class="card"><h2>${g}</h2>`+L.sort((a,b)=>({err:0,warn:1,ok:2}[a.sev]-{err:0,warn:1,ok:2}[b.sev])).map(x=>`<p style="margin:5px 0;"><span style="color:${col[x.sev]};font-weight:700;">${ic[x.sev]}</span> ${esc(x.t)}</p>`).join('')+`</div>`;
+  });
+  return h;
+}
+
+/* ---------------- TAB 6: ĐÁP ÁN ---------------- */
+function viewAnswer(){
+  let html=`<div class="card"><h2>ĐÁP ÁN & HƯỚNG DẪN CHẤM — ${esc(state.info.ten).toUpperCase()}</h2>
+  <div class="flex no-print" style="margin-top:8px;"><button class="primary" onclick="aiGenAll(true)">🤖 AI soạn các câu còn trống</button><button onclick="aiGenAll(false)">🤖 AI soạn lại toàn bộ</button><button class="primary" onclick="exportAnswerWord()">📄 Xuất Word (Đáp án)</button></div></div>`;
+  const slots=buildSlots();
+  orderedFormats().forEach(f=>{
+    html+=`<div class="card"><h2>${esc(f.name)}</h2>`;
+    const hint={nhieu_lua_chon:'Một chữ: A, B, C hoặc D',dung_sai:'a) Đúng; b) Sai; c) Đúng; d) Sai',tra_loi_ngan:({so:'Một con số',chu:'Một từ hoặc cụm từ ngắn',ca_hai:'Một con số hoặc một từ/cụm từ ngắn'})[kieuOf(f)],tu_luan:'Mỗi ý một dòng, điểm cuối dòng: Công thức v = s/t (0,5đ)'}[f.dang]||'Đáp án';
+    slots.filter(sl=>sl.format.id===f.id).forEach(sl=>{
+      const q=state.questions[sl.key]||{};
+      html+=`<div class="qslot"><div class="meta flex between"><span>${esc(slotLabel(sl))}${f.kind==='dung_sai'?'':' · '+vn(slotDiem(sl))+' điểm'}</span><span class="no-print">${q.prev?`<button class="small" onclick="restorePrev('${sl.key}')" title="Đổi qua lại giữa câu hiện tại và câu trước đó">↩ Lấy lại câu cũ</button> `:''}<button class="small" onclick="aiGenOne('${sl.key}')">${q.noidung?'🔄 Soạn câu khác':'🤖 Soạn'}</button></span></div>
+      <label>Đáp án</label><textarea rows="${f.dang==='tu_luan'?5:2}" placeholder="${hint}" oninput="setQuestion('${sl.key}','dapan',this.value)" onchange="render()">${esc(q.dapan||'')}</textarea>
+      ${f.dang==='tu_luan'?'':`<label style="margin-top:6px;">Giải thích (một câu ngắn)</label><textarea rows="2" oninput="setQuestion('${sl.key}','giaithich',this.value)">${esc(q.giaithich||'')}</textarea>`}${issuePills(sl,q)}</div>`;
+    });
+    html+=`</div>`;
+  });
+  return html;
+}
+
+/* ---------------- UTIL ---------------- */
+function esc(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+</script>
+</body>
+</html>
